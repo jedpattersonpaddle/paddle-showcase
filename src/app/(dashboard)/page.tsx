@@ -129,7 +129,7 @@ export default async function Home() {
 
                         <div className="pt-4 flex gap-2">
                           <Link
-                            href={`http://${showcase.showcase.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}/checkout`}
+                            href={`http://${showcase.showcase.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}/`}
                             target="_blank"
                             className="flex-1"
                           >
