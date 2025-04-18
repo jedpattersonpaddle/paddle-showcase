@@ -14,6 +14,7 @@ import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export function LoginForm({
   className,
@@ -23,7 +24,7 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
-    undefined,
+    undefined
   );
 
   const handleLogin = async () => {
@@ -93,9 +94,9 @@ export function LoginForm({
           </div>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <a href="/register" className="underline underline-offset-4">
+            <Link href="/register" className="underline underline-offset-4">
               Sign up
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>

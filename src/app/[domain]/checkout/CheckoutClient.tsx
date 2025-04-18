@@ -31,7 +31,10 @@ export default function CheckoutClient({
 
   const updateItems = useCallback(
     throttle(
-      (paddle: Paddle, items: { priceId: string; quantity: number }[]) => {
+      async (
+        paddle: Paddle,
+        items: { priceId: string; quantity: number }[]
+      ) => {
         paddle.Checkout.updateItems(items);
       },
       1000
@@ -139,11 +142,6 @@ export default function CheckoutClient({
                     <h5 className="text-blue-600 font-semibold text-sm uppercase tracking-wide">
                       {showcase.companyName}
                     </h5>
-                    {/* <h6 className="text-gray-500 text-sm">
-                      {checkoutData?.recurring_totals
-                        ? "Subscription"
-                        : "One-time purchase"}
-                    </h6> */}
                   </div>
 
                   <div>

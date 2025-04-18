@@ -6,8 +6,15 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, ExternalLink } from "lucide-react";
 import Image from "next/image";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Paddle Showcase",
+  description: "Paddle Showcase",
+};
+
 export default async function Home() {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -122,12 +129,13 @@ export default async function Home() {
 
                         <div className="pt-4 flex gap-2">
                           <Link
-                            href={`https://${showcase.showcase.subdomain}.paddle-showcase.com/checkout`}
+                            href={`http://${showcase.showcase.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}/checkout`}
                             target="_blank"
                             className="flex-1"
                           >
                             <Button variant="outline" className="w-full">
-                              View Checkout
+                              View Showcase
+                              <ExternalLink className="h-4 w-4 ml-2" />
                             </Button>
                           </Link>
                           <Link
