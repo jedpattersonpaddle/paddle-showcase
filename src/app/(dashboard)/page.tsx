@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { showcase as ShowcaseSchema } from "@/db/schema";
+import { showcase as ShowcaseSchema, user as UserSchema } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -18,7 +18,8 @@ export default async function Home() {
   const showcases = await db
     .select()
     .from(ShowcaseSchema)
-    .where(eq(ShowcaseSchema.userId, session.user.id));
+    .where(eq(ShowcaseSchema.userId, session.user.id))
+    .leftJoin(UserSchema, eq(ShowcaseSchema.userId, UserSchema.id));
 
   return (
     <div className="min-h-screen w-full bg-gray-50 relative overflow-hidden">
@@ -68,19 +69,19 @@ export default async function Home() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {showcases.map((showcase) => (
                   <div
-                    key={showcase.id}
+                    key={showcase.showcase.id}
                     className="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 overflow-hidden hover:shadow-2xl transition-shadow duration-300"
                   >
                     <div
                       className="h-2"
-                      style={{ backgroundColor: showcase.brandColor }}
+                      style={{ backgroundColor: showcase.showcase.brandColor }}
                     />
                     <div className="p-6">
                       <div className="flex items-center gap-4 mb-4">
-                        {showcase.logoUrl ? (
+                        {showcase.showcase.logoUrl ? (
                           <Image
-                            src={showcase.logoUrl}
-                            alt={showcase.companyName}
+                            src={showcase.showcase.logoUrl}
+                            alt={showcase.showcase.companyName}
                             className="h-12 w-12 rounded-md object-contain"
                             width={48}
                             height={48}
@@ -88,18 +89,23 @@ export default async function Home() {
                         ) : (
                           <div
                             className="h-12 w-12 rounded-md flex items-center justify-center text-white font-bold"
-                            style={{ backgroundColor: showcase.brandColor }}
+                            style={{
+                              backgroundColor: showcase.showcase.brandColor,
+                            }}
                           >
-                            {showcase.companyName.charAt(0)}
+                            {showcase.showcase.companyName.charAt(0)}
                           </div>
                         )}
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900">
-                            {showcase.companyName}
+                            {showcase.showcase.companyName}
                           </h3>
                           <p className="text-sm text-gray-500">
                             Created{" "}
-                            {new Date(showcase.createdAt).toLocaleDateString()}
+                            {new Date(
+                              showcase.showcase.createdAt
+                            ).toLocaleDateString()}{" "}
+                            by {showcase.user?.name}
                           </p>
                         </div>
                       </div>
@@ -110,13 +116,13 @@ export default async function Home() {
                             Subdomain
                           </span>
                           <span className="text-sm font-medium text-gray-900">
-                            {showcase.subdomain}.paddle-showcase.com
+                            {showcase.showcase.subdomain}.paddle-showcase.com
                           </span>
                         </div>
 
                         <div className="pt-4 flex gap-2">
                           <Link
-                            href={`https://${showcase.subdomain}.paddle-showcase.com/checkout`}
+                            href={`https://${showcase.showcase.subdomain}.paddle-showcase.com/checkout`}
                             target="_blank"
                             className="flex-1"
                           >
@@ -125,7 +131,7 @@ export default async function Home() {
                             </Button>
                           </Link>
                           <Link
-                            href={`/edit/${showcase.id}`}
+                            href={`/edit/${showcase.showcase.id}`}
                             className="flex-1"
                           >
                             <Button variant="outline" className="w-full">
