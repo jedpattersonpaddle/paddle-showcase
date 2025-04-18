@@ -12,7 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import Link from "next/link";
 import {
   Select,
@@ -21,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createShowcase } from "./actions";
 
 interface Product {
   id: string;
@@ -34,11 +36,11 @@ interface Product {
 
 export function CreateShowcaseClient() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [brandColor, setBrandColor] = useState("#3b82f6");
-  const [checkoutTitle, setCheckoutTitle] = useState("Complete Your Purchase");
-  const [buttonText, setButtonText] = useState("Complete Purchase");
+  const [subdomain, setSubdomain] = useState("");
   const [products, setProducts] = useState<Product[]>([
     {
       id: "1",
@@ -52,18 +54,7 @@ export function CreateShowcaseClient() {
   ]);
 
   const addProduct = () => {
-    setProducts([
-      ...products,
-      {
-        id: Date.now().toString(),
-        name: "",
-        priceName: "",
-        basePriceInCents: 0,
-        priceQuantity: 1,
-        recurringInterval: "month",
-        recurringFrequency: 1,
-      },
-    ]);
+    setProducts([...products]);
   };
 
   const removeProduct = (id: string) => {
@@ -75,23 +66,44 @@ export function CreateShowcaseClient() {
   const updateProduct = (id: string, updatedProduct: Partial<Product>) => {
     setProducts(
       products.map((product) =>
-        product.id === id ? { ...product, ...updatedProduct } : product,
-      ),
+        product.id === id ? { ...product, ...updatedProduct } : product
+      )
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would save this data to your database
-    console.log({
-      companyName,
-      logoUrl,
-      brandColor,
-      products,
-      checkoutTitle,
-      buttonText,
-    });
-    router.push("/dashboard");
+    setIsLoading(true);
+
+    try {
+      if (products.length === 0) {
+        throw new Error("At least one product is required");
+      }
+
+      const showcaseData = {
+        companyName,
+        logoUrl: logoUrl || undefined,
+        brandColor,
+        subdomain,
+        products: products as [Product, ...Product[]],
+      };
+
+      const result = await createShowcase(showcaseData);
+
+      if (!result) {
+        throw new Error("Failed to create showcase");
+      }
+
+      toast.success("Showcase created successfully!");
+      router.push("/dashboard");
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create showcase"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatCurrency = (cents: number) => {
@@ -105,7 +117,7 @@ export function CreateShowcaseClient() {
     <div className="max-w-4xl mx-auto py-8 px-4">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-          Create New Checkout Experience
+          Create New Checkout Showcase
         </h1>
         <p className="text-muted-foreground mt-2">
           Customize how your customers will see and interact with your checkout
@@ -125,7 +137,7 @@ export function CreateShowcaseClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="company-name" className="text-sm font-medium">
                   Company Name
@@ -185,6 +197,28 @@ export function CreateShowcaseClient() {
                     Primary color for buttons and accents
                   </p>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="subdomain" className="text-sm font-medium">
+                  Subdomain
+                </Label>
+                <div className="flex items-center">
+                  <Input
+                    id="subdomain"
+                    value={subdomain}
+                    onChange={(e) => setSubdomain(e.target.value)}
+                    placeholder="your-company"
+                    className="rounded-r-none border-r-0 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                    required
+                  />
+                  <div className="px-3 py-2 bg-muted border border-l-0 rounded-r-md text-muted-foreground text-sm">
+                    .paddle-showcase.com
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Your unique URL for the checkout page
+                </p>
               </div>
             </div>
           </CardContent>
@@ -375,7 +409,9 @@ export function CreateShowcaseClient() {
                       <p className="text-xs text-muted-foreground">
                         {product.recurringInterval === "one-time"
                           ? "Not applicable for one-time purchases"
-                          : `Every ${product.recurringFrequency} ${product.recurringInterval}${product.recurringFrequency > 1 ? "s" : ""}`}
+                          : `Every ${product.recurringFrequency} ${
+                              product.recurringInterval
+                            }${product.recurringFrequency > 1 ? "s" : ""}`}
                       </p>
                     </div>
                   </div>
@@ -394,98 +430,24 @@ export function CreateShowcaseClient() {
           </CardContent>
         </Card>
 
-        {/* Checkout Options Card */}
-        <Card className="border shadow-md overflow-hidden">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <svg
-                className="h-5 w-5 text-blue-500"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                />
-              </svg>
-              Checkout Options
-            </CardTitle>
-            <CardDescription>
-              Configure how the checkout process appears to customers
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="checkout-title" className="text-sm font-medium">
-                  Checkout Page Title
-                </Label>
-                <Input
-                  id="checkout-title"
-                  value={checkoutTitle}
-                  onChange={(e) => setCheckoutTitle(e.target.value)}
-                  placeholder="Complete Your Purchase"
-                />
-                <p className="text-xs text-muted-foreground">
-                  This appears at the top of your checkout page
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="button-text" className="text-sm font-medium">
-                  Purchase Button Text
-                </Label>
-                <Input
-                  id="button-text"
-                  value={buttonText}
-                  onChange={(e) => setButtonText(e.target.value)}
-                  placeholder="Complete Purchase"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Text displayed on the final purchase button
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="font-medium mb-2 text-sm">Button Preview</h3>
-              <div className="flex items-center gap-4">
-                <button
-                  className="px-4 py-2 rounded text-white font-medium"
-                  style={{ backgroundColor: brandColor }}
-                >
-                  {buttonText || "Complete Purchase"}
-                </button>
-                <p className="text-xs text-muted-foreground">
-                  Preview of your checkout button using your brand color
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Form Actions */}
         <Card className="border shadow-md overflow-hidden">
-          <CardContent className="p-4 flex justify-between items-center">
-            <p className="text-sm text-muted-foreground">
-              All changes are saved as drafts until published
-            </p>
-            <div className="flex gap-3">
-              <Button type="button" variant="outline" asChild>
-                <Link href="/dashboard">Cancel</Link>
-              </Button>
-              <Button
-                type="submit"
-                style={{ backgroundColor: brandColor }}
-                className="text-white hover:opacity-90"
-              >
-                Create Preview
-              </Button>
-            </div>
+          <CardContent className="p-4 flex justify-end items-center">
+            <Button
+              type="submit"
+              style={{ backgroundColor: brandColor }}
+              className="text-white hover:opacity-90"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create"
+              )}
+            </Button>
           </CardContent>
         </Card>
       </form>
