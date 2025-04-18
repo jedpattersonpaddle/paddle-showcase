@@ -3,12 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { showcase, product } from "@/db/schema";
 import Script from "next/script";
-import {
-  initializePaddle,
-  InitializePaddleOptions,
-  Paddle,
-  Environments,
-} from "@paddle/paddle-js";
+import { initializePaddle, Paddle, Environments } from "@paddle/paddle-js";
 import type { CheckoutEventsData } from "@paddle/paddle-js/types/checkout/events";
 import throttle from "lodash.throttle";
 

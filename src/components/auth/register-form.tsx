@@ -14,6 +14,7 @@ import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export function RegisterForm({
   className,
@@ -24,7 +25,7 @@ export function RegisterForm({
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
-    undefined,
+    undefined
   );
 
   const handleRegister = async () => {
@@ -106,9 +107,9 @@ export function RegisterForm({
           </div>
           <div className="mt-4 text-center text-sm">
             Already have an account?{" "}
-            <a href="/login" className="underline underline-offset-4">
+            <Link href="/login" className="underline underline-offset-4">
               Login
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>

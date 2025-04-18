@@ -23,31 +23,35 @@ export default function Navbar() {
   };
 
   return (
-    <header className="border-b">
+    <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
       <div className="container mx-auto flex h-16 items-center px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/paddle-small.webp"
-            height={64}
-            width={64}
+            height={40}
+            width={40}
             alt="Paddle Logo"
+            className="rounded-md"
           />
-          <span className="font-bold">Checkout Preview Tool</span>
+          <span className="font-bold text-gray-900">Paddle Showcase</span>
         </Link>
 
         <nav className="ml-auto flex items-center gap-4">
-          {/* <ModeToggle /> */}
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback>AD</AvatarFallback>
+                  <AvatarFallback className="bg-blue-100 text-blue-600">
+                    JP
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
