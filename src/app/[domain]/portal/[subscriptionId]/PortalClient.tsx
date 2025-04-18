@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { cancelSubscription, resumeSubscription } from "./actions";
+import UpdatePaymentMethod from "./UpdatePaymentMethod";
 
 interface SimplifiedSubscription {
   id: string;
@@ -346,27 +347,7 @@ export default function PortalClient({
                     </div>
                   </div>
 
-                  <a
-                    href={subscription.managementUrls.updatePaymentMethod}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-blue-600 shadow-sm ring-1 ring-inset ring-blue-200 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
-                  >
-                    <svg
-                      className="h-5 w-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M3 10h18M7 15h.01M11 15h.01M15 15h.01M19 15h.01M7 19h.01M11 19h.01M15 19h.01M19 19h.01M21 6H3v14h18V6z"
-                      />
-                    </svg>
-                    Update payment method
-                  </a>
+                  <UpdatePaymentMethod subscriptionId={subscriptionId} />
                 </div>
               </div>
 

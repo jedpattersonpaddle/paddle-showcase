@@ -27,3 +27,27 @@ export async function resumeSubscription(subscriptionId: string) {
     return { success: false, error: "Failed to resume subscription" };
   }
 }
+
+export async function getUpdatePaymentMethodTransaction(
+  subscriptionId: string
+) {
+  try {
+    const transaction =
+      await paddle.subscriptions.getPaymentMethodChangeTransaction(
+        subscriptionId
+      );
+
+    const serializedTransaction = {
+      id: transaction.id,
+      status: transaction.status,
+    };
+
+    return { success: true, transaction: serializedTransaction };
+  } catch (error) {
+    console.error("Error getting update payment method transaction:", error);
+    return {
+      success: false,
+      error: "Failed to get update payment method transaction",
+    };
+  }
+}
