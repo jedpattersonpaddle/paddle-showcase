@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { showcase, product } from "@/db/schema";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowRight, Globe } from "lucide-react";
+import { Check, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import usePaddle from "@/hooks/usePaddle";
 import {
@@ -226,8 +226,7 @@ export default function PricingClient({
                 Welcome to {showcase.companyName}
               </h1>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-                Choose the plan that&apos;s right for you and start growing your
-                business today.
+                Choose the plan that&apos;s right for you
               </p>
             </div>
 
@@ -321,17 +320,19 @@ export default function PricingClient({
                           </li>
                         ))}
                       </ul>
-                      <Link href={`/checkout`}>
+                      <Link
+                        href={`/checkout/${product.paddlePriceId}`}
+                        className="w-full"
+                      >
                         <Button
                           className={cn(
-                            "w-full",
+                            "w-full cursor-pointer",
                             isPopular
                               ? "bg-blue-600 hover:bg-blue-700 text-white"
                               : "bg-gray-100 hover:bg-gray-200 text-gray-900"
                           )}
                         >
-                          Get Started
-                          <ArrowRight className="h-4 w-4 ml-2" />
+                          Buy Now
                         </Button>
                       </Link>
                     </div>

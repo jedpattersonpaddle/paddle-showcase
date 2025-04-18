@@ -1,45 +1,43 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { showcase, product } from "@/db/schema";
+import { showcase } from "@/db/schema";
 import Script from "next/script";
 import { initializePaddle, Paddle, Environments } from "@paddle/paddle-js";
 import type { CheckoutEventsData } from "@paddle/paddle-js/types/checkout/events";
 import throttle from "lodash.throttle";
 
 type Showcase = typeof showcase.$inferSelect;
-type Product = typeof product.$inferSelect;
 
 interface CheckoutClientProps {
+  priceId: string;
   showcase: Showcase;
-  products: Product[];
 }
 
 export default function CheckoutClient({
+  priceId,
   showcase,
-  products,
 }: CheckoutClientProps) {
   const [paddle, setPaddle] = useState<Paddle | null>(null);
   const [checkoutData, setCheckoutData] = useState<CheckoutEventsData | null>(
     null
   );
-  const [quantities, setQuantities] = useState<number[]>([1]);
+  const [quantity, setQuantity] = useState<number>(1);
 
   const handleCheckoutEvents = (event: CheckoutEventsData) => {
     setCheckoutData(event);
   };
 
   const updateItems = useCallback(
-    throttle(
-      async (
-        paddle: Paddle,
-        items: { priceId: string; quantity: number }[]
-      ) => {
-        paddle.Checkout.updateItems(items);
-      },
-      1000
-    ),
-    []
+    throttle(async (paddle: Paddle, quantity: number) => {
+      paddle.Checkout.updateItems([
+        {
+          priceId,
+          quantity,
+        },
+      ]);
+    }, 1000),
+    [priceId]
   );
 
   useEffect(() => {
@@ -69,43 +67,35 @@ export default function CheckoutClient({
           },
         },
       }).then(async (paddle) => {
-        if (paddle && products.length > 0) {
+        if (paddle) {
           setPaddle(paddle);
-          const initialItems = products.map((product, index) => ({
-            priceId: product.paddlePriceId,
-            quantity: quantities[index] || 1,
-          }));
-
           paddle.Checkout.open({
-            items: initialItems,
+            items: [
+              {
+                priceId,
+                quantity,
+              },
+            ],
           });
         }
       });
     }
-  }, [paddle?.Initialized, products, quantities]);
+  }, [paddle?.Initialized, priceId, quantity]);
 
   useEffect(() => {
     if (paddle && paddle.Initialized) {
-      const items = products.map((product, index) => ({
-        priceId: product.paddlePriceId,
-        quantity: quantities[index] || 1,
-      }));
-      updateItems(paddle, items);
+      updateItems(paddle, quantity);
     }
-  }, [paddle, products, quantities, updateItems]);
+  }, [paddle, quantity, updateItems]);
 
-  const decreaseQuantity = (index: number) => {
-    if (quantities[index] > 1) {
-      const newQuantities = [...quantities];
-      newQuantities[index] = quantities[index] - 1;
-      setQuantities(newQuantities);
+  const decreaseQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(quantity - 1);
     }
   };
 
-  const increaseQuantity = (index: number) => {
-    const newQuantities = [...quantities];
-    newQuantities[index] = quantities[index] + 1;
-    setQuantities(newQuantities);
+  const increaseQuantity = () => {
+    setQuantity(quantity + 1);
   };
 
   const getCurrencySymbol = (currencyCode: string) => {
@@ -171,43 +161,40 @@ export default function CheckoutClient({
                 <div className="space-y-6">
                   <table className="w-full">
                     <tbody className="divide-y divide-gray-100">
-                      {products.map((product, index) => (
-                        <tr key={product.id} className="group">
-                          <td className="py-4">
-                            <div className="flex items-center">
-                              <div className="flex items-center border rounded-lg mr-4 bg-white shadow-sm">
-                                <button
-                                  onClick={() => decreaseQuantity(index)}
-                                  className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-l-lg transition-colors"
-                                >
-                                  -
-                                </button>
-                                <span className="px-4 py-2 font-medium min-w-[40px] text-center">
-                                  {quantities[index] || 1}
-                                </span>
-                                <button
-                                  onClick={() => increaseQuantity(index)}
-                                  className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-r-lg transition-colors"
-                                >
-                                  +
-                                </button>
-                              </div>
-                              <span className="text-gray-700 font-medium">
-                                {product.priceName}
+                      <tr className="group">
+                        <td className="py-4">
+                          <div className="flex items-center">
+                            <div className="flex items-center border rounded-lg mr-4 bg-white shadow-sm">
+                              <button
+                                onClick={decreaseQuantity}
+                                className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-l-lg transition-colors"
+                              >
+                                -
+                              </button>
+                              <span className="px-4 py-2 font-medium min-w-[40px] text-center">
+                                {quantity}
                               </span>
+                              <button
+                                onClick={increaseQuantity}
+                                className="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-r-lg transition-colors"
+                              >
+                                +
+                              </button>
                             </div>
-                          </td>
-                          <td className="py-4 text-right text-gray-700 font-medium">
-                            {formatPrice(
-                              ((checkoutData?.items?.[index]?.totals
-                                ?.subtotal || 0) /
-                                (quantities[index] || 1)) *
-                                (quantities[index] || 1),
-                              checkoutData?.currency_code
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                            <span className="text-gray-700 font-medium">
+                              License
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-4 text-right text-gray-700 font-medium">
+                          {formatPrice(
+                            ((checkoutData?.items?.[0]?.totals?.subtotal || 0) /
+                              quantity) *
+                              quantity,
+                            checkoutData?.currency_code
+                          )}
+                        </td>
+                      </tr>
 
                       <tr>
                         <td className="py-4 text-gray-500">Subtotal</td>

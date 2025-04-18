@@ -1,8 +1,5 @@
 import { db } from "@/db";
-import {
-  showcase as ShowcaseSchema,
-  product as ProductSchema,
-} from "@/db/schema";
+import { showcase as ShowcaseSchema } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import CheckoutClient from "./CheckoutClient";
 import type { Metadata } from "next";
@@ -30,26 +27,23 @@ async function getShowcase(domain: string) {
     .select()
     .from(ShowcaseSchema)
     .where(eq(ShowcaseSchema.subdomain, domain))
-    .leftJoin(ProductSchema, eq(ShowcaseSchema.id, ProductSchema.showcaseId));
-  return showcase;
+    .limit(1);
+  return showcase[0];
 }
 
 export default async function CheckoutPage({
   params,
 }: {
-  params: Promise<{ domain: string }>;
+  params: Promise<{ domain: string; priceId: string }>;
 }) {
   const domain = decodeURIComponent((await params).domain);
   const showcase = await getShowcase(domain);
 
-  if (!showcase || showcase.length === 0) {
+  if (!showcase) {
     return <div>Showcase not found</div>;
   }
 
-  // Extract products from the showcase data and filter out null values
-  const products = showcase
-    .filter((item) => item.product !== null)
-    .map((item) => item.product as NonNullable<typeof item.product>);
-
-  return <CheckoutClient showcase={showcase[0].showcase} products={products} />;
+  return (
+    <CheckoutClient priceId={(await params).priceId} showcase={showcase} />
+  );
 }
