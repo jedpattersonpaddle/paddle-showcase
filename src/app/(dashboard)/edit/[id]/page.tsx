@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 export default async function EditShowcase({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -20,27 +20,24 @@ export default async function EditShowcase({
 
   if (!session) redirect("/login");
 
-  // Fetch the showcase data
   const showcase = await db
     .select()
     .from(ShowcaseSchema)
-    .where(eq(ShowcaseSchema.id, params.id))
+    .where(eq(ShowcaseSchema.id, (await params).id))
     .limit(1);
 
   if (!showcase || showcase.length === 0) {
     redirect("/");
   }
 
-  // Check if the user owns this showcase
   if (showcase[0].userId !== session.user.id) {
     redirect("/");
   }
 
-  // Fetch the products for this showcase
   const products = await db
     .select()
     .from(ProductSchema)
-    .where(eq(ProductSchema.showcaseId, params.id));
+    .where(eq(ProductSchema.showcaseId, (await params).id));
 
   return <EditShowcaseClient showcase={showcase[0]} products={products} />;
 }
