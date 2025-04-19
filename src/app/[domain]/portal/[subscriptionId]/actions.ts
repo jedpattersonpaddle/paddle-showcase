@@ -1,6 +1,7 @@
 "use server";
 import { paddle } from "@/lib/paddle";
 import { revalidatePath } from "next/cache";
+import { Transaction } from "./types";
 
 export async function cancelSubscription(subscriptionId: string) {
   try {
@@ -75,6 +76,37 @@ export async function getUpdatePaymentMethodTransaction(
     return {
       success: false,
       error: "Failed to get update payment method transaction",
+    };
+  }
+}
+
+export async function getSubscriptionTransactions(subscriptionId: string) {
+  try {
+    const transactionsCollection = await paddle.transactions.list({
+      subscriptionId: [subscriptionId],
+    });
+
+    const transactions = await transactionsCollection.next();
+
+    const formattedTransactions: Transaction[] = transactions.map(
+      (transaction) => ({
+        id: transaction.id,
+        status: transaction.status,
+        createdAt: transaction.createdAt,
+        updatedAt: transaction.updatedAt,
+        billedAt: transaction.billedAt,
+        totalAmount: transaction.details?.totals?.grandTotal,
+        items: transaction.items,
+        customer: transaction.customer,
+      })
+    );
+
+    return { success: true, transactions: formattedTransactions };
+  } catch (error) {
+    console.error("Error fetching subscription transactions:", error);
+    return {
+      success: false,
+      error: "Failed to fetch subscription transactions",
     };
   }
 }

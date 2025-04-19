@@ -10,16 +10,23 @@ import PaymentHistoryTable from "./components/PaymentHistoryTable";
 import PaymentDetailsDialog from "./components/PaymentDetailsDialog";
 import UpcomingPaymentCard from "./components/UpcomingPaymentCard";
 import SubscriptionOverviewCard from "./components/SubscriptionOverviewCard";
-import { CustomerInfo, PaymentHistory, SimplifiedSubscription } from "./types";
+import {
+  CustomerInfo,
+  PaymentHistory,
+  SimplifiedSubscription,
+  Transaction,
+} from "./types";
 
 interface PortalClientProps {
   subscriptionId: string;
   subscription: SimplifiedSubscription;
+  transactions: Transaction[];
 }
 
 export default function PortalClient({
   subscriptionId,
   subscription,
+  transactions,
 }: PortalClientProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -37,23 +44,28 @@ export default function PortalClient({
     expiryYear: "2025",
   };
 
-  // Mock payment history
-  const paymentHistory: PaymentHistory[] = [
-    {
-      id: "pi_1234567890",
-      date: "2023-05-15T10:30:00Z",
-      amount: "9900",
-      status: "succeeded",
-      paymentMethod: "Visa ending in 4242",
-      invoiceUrl: "#",
-      cardBrand: "visa",
-      cardLast4: "4242",
-      description: "Purchase of Standard",
-      transactionId: "txn_01js5h5vv4veg76avrxc90wwg7",
-      billingDate: "Apr 18, 2025",
-    },
-    // ... other payment history items
-  ];
+  // Convert transactions to payment history format
+  const paymentHistory: PaymentHistory[] = transactions.map((transaction) => ({
+    id: transaction.id,
+    date: transaction.createdAt,
+    amount: transaction.totalAmount || "0",
+    status: transaction.status,
+    paymentMethod: transaction.paymentMethod?.card
+      ? `${transaction.paymentMethod.card.brand} ending in ${transaction.paymentMethod.card.last4}`
+      : "Unknown payment method",
+    invoiceUrl: transaction.invoiceUrl,
+    cardBrand: transaction.paymentMethod?.card?.brand,
+    cardLast4: transaction.paymentMethod?.card?.last4,
+    description: transaction.items[0]?.price?.name || "Subscription payment",
+    transactionId: transaction.id,
+    billingDate: new Date(
+      transaction.billedAt || transaction.createdAt
+    ).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }),
+  }));
 
   const formatCurrency = (amount: string, currencyCode: string) => {
     const numericAmount = parseInt(amount) / 100;

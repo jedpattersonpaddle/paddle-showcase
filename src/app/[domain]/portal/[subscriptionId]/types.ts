@@ -10,6 +10,53 @@ export interface PaymentMethod {
   expiryYear: string;
 }
 
+export interface Transaction {
+  id: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  billedAt: string | null;
+  totalAmount: string | undefined;
+  items: Array<{
+    price: {
+      name: string;
+      unitPrice: {
+        amount: string;
+        currencyCode: string;
+      };
+    };
+    quantity: number;
+    totalAmount: {
+      amount: string;
+      currencyCode: string;
+    };
+  }>;
+  customer: {
+    id: string;
+    name: string | null;
+    email: string;
+  } | null;
+  address?: {
+    countryCode: string;
+    postalCode: string | null;
+  } | null;
+  business?: {
+    name: string;
+    taxIdentifier: string | null;
+  } | null;
+  paymentMethod?: {
+    type: string;
+    card?: {
+      brand: string;
+      last4: string;
+      expiryMonth: string;
+      expiryYear: string;
+    };
+  } | null;
+  invoiceUrl?: string;
+  receiptUrl?: string;
+}
+
 export interface PaymentHistory {
   id: string;
   date: string;
