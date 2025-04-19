@@ -79,34 +79,3 @@ export async function getUpdatePaymentMethodTransaction(
     };
   }
 }
-
-export async function getSubscriptionTransactions(subscriptionId: string) {
-  try {
-    const transactionsCollection = await paddle.transactions.list({
-      subscriptionId: [subscriptionId],
-    });
-
-    const transactions = await transactionsCollection.next();
-
-    const formattedTransactions: Transaction[] = transactions.map(
-      (transaction) => ({
-        id: transaction.id,
-        status: transaction.status,
-        createdAt: transaction.createdAt,
-        updatedAt: transaction.updatedAt,
-        billedAt: transaction.billedAt,
-        totalAmount: transaction.details?.totals?.grandTotal,
-        items: transaction.items,
-        customer: transaction.customer,
-      })
-    );
-
-    return { success: true, transactions: formattedTransactions };
-  } catch (error) {
-    console.error("Error fetching subscription transactions:", error);
-    return {
-      success: false,
-      error: "Failed to fetch subscription transactions",
-    };
-  }
-}
