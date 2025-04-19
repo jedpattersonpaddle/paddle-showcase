@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import PortalClient from "./PortalClient";
 import { paddle } from "@/lib/paddle";
+import { SimplifiedSubscription } from "./types";
 
 export const metadata: Metadata = {
   title: "Customer Portal",
@@ -11,45 +12,12 @@ interface PortalPageProps {
   params: Promise<{ subscriptionId: string }>;
 }
 
-interface SimplifiedSubscription {
-  id: string;
-  status: string;
-  currencyCode: string;
-  startedAt: string;
-  nextBilledAt: string;
-  billingCycle: {
-    frequency: number;
-    interval: string;
-  };
-  items: Array<{
-    quantity: number;
-    price: {
-      name: string;
-      unitPrice: {
-        amount: string;
-        currencyCode: string;
-      };
-    };
-    product: {
-      name: string;
-      description: string;
-      imageUrl: string;
-    };
-  }>;
-  managementUrls: {
-    updatePaymentMethod: string;
-    cancel: string;
-  };
-  scheduledChange?: {
-    action: string;
-    effectiveAt: string;
-  } | null;
-}
-
 export default async function PortalPage({ params }: PortalPageProps) {
   const { subscriptionId } = await params;
 
   const subscription = await paddle.subscriptions.get(subscriptionId);
+
+  const customer = await paddle.customers.get(subscription.customerId);
 
   // Create a plain object with only the properties we need
   const simplifiedSubscription: SimplifiedSubscription = {
@@ -77,6 +45,10 @@ export default async function PortalPage({ params }: PortalPageProps) {
         imageUrl: item.product.imageUrl || "",
       },
     })),
+    customer: {
+      name: customer.name,
+      email: customer.email,
+    },
     managementUrls: {
       updatePaymentMethod:
         subscription.managementUrls?.updatePaymentMethod || "",

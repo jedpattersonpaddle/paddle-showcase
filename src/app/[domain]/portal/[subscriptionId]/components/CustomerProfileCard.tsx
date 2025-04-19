@@ -2,30 +2,33 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { updateCustomerInfo } from "../actions";
 
 interface CustomerInfo {
-  name: string;
+  name: string | null;
   email: string;
 }
 
 interface CustomerProfileCardProps {
   customerInfo: CustomerInfo;
+  subscriptionId: string;
 }
 
 export default function CustomerProfileCard({
   customerInfo,
+  subscriptionId,
 }: CustomerProfileCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [editedCustomerInfo, setEditedCustomerInfo] = useState<CustomerInfo>({
-    name: customerInfo.name,
+    name: customerInfo.name || "",
     email: customerInfo.email,
   });
 
   const handleCustomerEdit = () => {
     setIsEditingCustomer(true);
     setEditedCustomerInfo({
-      name: customerInfo.name,
+      name: customerInfo.name || "",
       email: customerInfo.email,
     });
   };
@@ -33,13 +36,30 @@ export default function CustomerProfileCard({
   const handleCustomerSave = async () => {
     setIsLoading(true);
     try {
-      // TODO: Implement the actual API call to update customer info
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulated API call
+      const customerInfoToUpdate = {
+        name: editedCustomerInfo.name || "",
+        email: editedCustomerInfo.email,
+      };
+
+      const result = await updateCustomerInfo(
+        subscriptionId,
+        customerInfoToUpdate
+      );
+
+      if (!result.success) {
+        throw new Error(
+          result.error || "Failed to update customer information"
+        );
+      }
+
       toast.success("Customer information updated successfully");
-      // In a real implementation, you would update the customerInfo state with the response
       setIsEditingCustomer(false);
     } catch (error) {
-      toast.error("Failed to update customer information");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update customer information"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +93,7 @@ export default function CustomerProfileCard({
               <Input
                 type="text"
                 id="name"
-                value={editedCustomerInfo.name}
+                value={editedCustomerInfo.name || ""}
                 onChange={(e) =>
                   setEditedCustomerInfo((prev) => ({
                     ...prev,
@@ -129,7 +149,7 @@ export default function CustomerProfileCard({
             <div>
               <h4 className="text-sm font-medium text-gray-500">Name</h4>
               <p className="mt-1 text-base text-gray-900">
-                {customerInfo.name}
+                {customerInfo.name || "Not provided"}
               </p>
             </div>
             <div>

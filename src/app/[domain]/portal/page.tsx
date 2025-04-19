@@ -35,7 +35,7 @@ export default async function PortalPage({
             Showcase not found
           </h1>
           <p className="text-gray-500 mt-2">
-            The showcase you're looking for doesn't exist.
+            The showcase you&apos;re looking for doesn&apos;t exist.
           </p>
         </div>
       </div>
@@ -105,7 +105,7 @@ export default async function PortalPage({
                     No subscriptions found
                   </h3>
                   <p className="mt-2 text-sm text-gray-500">
-                    You don't have any active subscriptions yet.
+                    You don&apos;t have any active subscriptions yet.
                   </p>
                   <div className="mt-6">
                     <Link href={`/`}>

@@ -49,6 +49,10 @@ export interface SimplifiedSubscription {
       imageUrl: string;
     };
   }>;
+  customer: {
+    name: string | null;
+    email: string;
+  };
   managementUrls: {
     updatePaymentMethod: string;
     cancel: string;

@@ -29,12 +29,6 @@ export default function PortalClient({
     null
   );
 
-  // Mock customer data
-  const customerInfo: CustomerInfo = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-  };
-
   // Mock payment method
   const paymentMethod = {
     brand: "Visa",
@@ -211,7 +205,13 @@ export default function PortalClient({
               />
 
               {/* Customer Profile Card */}
-              <CustomerProfileCard customerInfo={customerInfo} />
+              <CustomerProfileCard
+                customerInfo={{
+                  name: subscription.customer.name,
+                  email: subscription.customer.email,
+                }}
+                subscriptionId={subscriptionId}
+              />
             </div>
 
             {/* Payment History Table */}
