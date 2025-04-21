@@ -7,7 +7,16 @@ import { initializePaddle, Paddle, Environments } from "@paddle/paddle-js";
 import type { CheckoutEventsData } from "@paddle/paddle-js/types/checkout/events";
 import throttle from "lodash.throttle";
 import { Switch } from "@/components/ui/switch";
-import { Settings } from "lucide-react";
+import { Settings, Globe, X, Tag, Receipt } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useSearchParams, useRouter } from "next/navigation";
+import { checkoutTranslations, Locale } from "@/lib/translations/checkout";
 
 type Showcase = typeof showcase.$inferSelect;
 
@@ -20,6 +29,9 @@ export default function CheckoutClient({
   priceId,
   showcase,
 }: CheckoutClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [paddle, setPaddle] = useState<Paddle | null>(null);
   const [checkoutData, setCheckoutData] = useState<CheckoutEventsData | null>(
     null
@@ -27,6 +39,28 @@ export default function CheckoutClient({
   const [quantity, setQuantity] = useState<number>(1);
   const [showAnnualUpsell, setShowAnnualUpsell] = useState<boolean>(true);
   const [showSettingsCard, setShowSettingsCard] = useState<boolean>(true);
+  const [showDiscountInput, setShowDiscountInput] = useState<boolean>(true);
+  const [showTaxIdInput, setShowTaxIdInput] = useState<boolean>(false);
+
+  // Get locale from URL or default to English
+  const urlLocale = searchParams.get("locale") as Locale | null;
+  const [checkoutLocale, setCheckoutLocale] = useState<Locale>(
+    urlLocale && Object.keys(checkoutTranslations).includes(urlLocale)
+      ? urlLocale
+      : "en"
+  );
+
+  const [settingsVersion, setSettingsVersion] = useState<number>(0);
+
+  // Update URL when locale changes
+  const updateLocale = (newLocale: Locale) => {
+    setCheckoutLocale(newLocale);
+
+    // Update URL with new locale
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("locale", newLocale);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   const handleCheckoutEvents = (event: CheckoutEventsData) => {
     setCheckoutData(event);
@@ -43,6 +77,66 @@ export default function CheckoutClient({
     }, 1000),
     [priceId]
   );
+
+  // Function to reinitialize Paddle with new settings
+  const reinitializePaddle = useCallback(() => {
+    if (paddle) {
+      // Close the current checkout
+      paddle.Checkout.close();
+
+      // Reinitialize with new settings
+      initializePaddle({
+        token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
+        environment: process.env.NEXT_PUBLIC_PADDLE_ENV as Environments,
+        eventCallback: (event) => {
+          if (event.data && event.name) {
+            handleCheckoutEvents(event.data);
+          }
+        },
+        checkout: {
+          settings: {
+            variant: "one-page",
+            displayMode: "inline",
+            frameTarget: "paddle-checkout-frame",
+            frameInitialHeight: 450,
+            frameStyle:
+              "width: 100%; background-color: transparent; border: none",
+            successUrl: "/checkout/success",
+            allowedPaymentMethods: ["card"],
+            showAddDiscounts: showDiscountInput,
+            showAddTaxId: showTaxIdInput,
+            locale: checkoutLocale,
+          },
+        },
+      }).then(async (newPaddle) => {
+        if (newPaddle) {
+          setPaddle(newPaddle);
+          newPaddle.Checkout.open({
+            items: [
+              {
+                priceId,
+                quantity,
+              },
+            ],
+          });
+        }
+      });
+    }
+  }, [
+    paddle,
+    priceId,
+    quantity,
+    showDiscountInput,
+    showTaxIdInput,
+    checkoutLocale,
+  ]);
+
+  // Effect to handle settings changes
+  useEffect(() => {
+    if (paddle && paddle.Initialized) {
+      reinitializePaddle();
+    }
+  }, [showDiscountInput, showTaxIdInput, checkoutLocale, reinitializePaddle]);
 
   useEffect(() => {
     if (
@@ -68,6 +162,9 @@ export default function CheckoutClient({
               "width: 100%; background-color: transparent; border: none",
             successUrl: "/checkout/success",
             allowedPaymentMethods: ["card"],
+            showAddDiscounts: showDiscountInput,
+            showAddTaxId: showTaxIdInput,
+            locale: checkoutLocale,
           },
         },
       }).then(async (paddle) => {
@@ -84,7 +181,14 @@ export default function CheckoutClient({
         }
       });
     }
-  }, [paddle?.Initialized, priceId, quantity]);
+  }, [
+    paddle?.Initialized,
+    priceId,
+    quantity,
+    showDiscountInput,
+    showTaxIdInput,
+    checkoutLocale,
+  ]);
 
   useEffect(() => {
     if (paddle && paddle.Initialized) {
@@ -119,6 +223,23 @@ export default function CheckoutClient({
     return `${getCurrencySymbol(currencyCode)}${amount.toFixed(2)}`;
   };
 
+  const locales = [
+    { code: "en", name: "English" },
+    { code: "es", name: "Spanish" },
+    { code: "fr", name: "French" },
+    { code: "de", name: "German" },
+    { code: "it", name: "Italian" },
+    { code: "pt", name: "Portuguese" },
+    { code: "nl", name: "Dutch" },
+    { code: "pl", name: "Polish" },
+    { code: "ru", name: "Russian" },
+    { code: "ja", name: "Japanese" },
+    { code: "zh", name: "Chinese" },
+  ];
+
+  // Get current translations
+  const t = checkoutTranslations[checkoutLocale];
+
   return (
     <div className="min-h-screen w-full bg-gray-50 relative overflow-hidden">
       {/* Background Pattern */}
@@ -143,17 +264,15 @@ export default function CheckoutClient({
                         checkoutData?.currency_code
                       )}
                     </h3>
-                    <h4 className="text-sm text-gray-500 mt-1">due today</h4>
+                    <h4 className="text-sm text-gray-500 mt-1">{t.dueToday}</h4>
                   </div>
 
                   <p className="text-gray-600 text-sm leading-relaxed">
-                    Includes full access to the product, plus all future
-                    updates. Add more seats, upgrade, pause or cancel your
-                    subscription at any time.
+                    {t.includesAccess}
                   </p>
 
                   <p className="text-gray-500 text-sm">
-                    All prices in{" "}
+                    {t.allPricesIn}{" "}
                     <span className="font-medium">
                       {checkoutData?.currency_code || "GBP"}
                     </span>
@@ -184,7 +303,7 @@ export default function CheckoutClient({
                               </button>
                             </div>
                             <span className="text-gray-700 font-medium">
-                              License
+                              {t.license}
                             </span>
                           </div>
                         </td>
@@ -199,7 +318,7 @@ export default function CheckoutClient({
                       </tr>
 
                       <tr>
-                        <td className="py-4 text-gray-500">Subtotal</td>
+                        <td className="py-4 text-gray-500">{t.subtotal}</td>
                         <td className="py-4 text-right font-medium text-gray-700">
                           {formatPrice(
                             checkoutData?.totals?.subtotal || 0,
@@ -209,7 +328,7 @@ export default function CheckoutClient({
                       </tr>
 
                       <tr>
-                        <td className="py-4 text-gray-500">Taxes</td>
+                        <td className="py-4 text-gray-500">{t.taxes}</td>
                         <td className="py-4 text-right text-gray-500">
                           {formatPrice(
                             checkoutData?.totals?.tax || 0,
@@ -220,7 +339,7 @@ export default function CheckoutClient({
 
                       <tr className="border-t-2 border-gray-200">
                         <td className="py-4 font-semibold text-gray-900">
-                          Total price (due today)
+                          {t.totalPrice}
                         </td>
                         <td className="py-4 text-right font-semibold text-gray-900">
                           {formatPrice(
@@ -232,15 +351,17 @@ export default function CheckoutClient({
 
                       {checkoutData?.recurring_totals && (
                         <tr>
-                          <td className="py-4 text-gray-500">then</td>
+                          <td className="py-4 text-gray-500">{t.then}</td>
                           <td className="py-4 text-right text-gray-500">
                             {formatPrice(
                               checkoutData?.recurring_totals?.total || 0,
                               checkoutData?.currency_code
                             )}{" "}
-                            every{" "}
+                            {t.every}{" "}
                             {checkoutData?.items?.[0]?.billing_cycle
-                              ?.interval || "month"}
+                              ?.interval === "year"
+                              ? t.year
+                              : t.month}
                           </td>
                         </tr>
                       )}
@@ -267,12 +388,10 @@ export default function CheckoutClient({
                       </div>
                       <div className="flex-1">
                         <h3 className="text-sm font-medium text-gray-900">
-                          Save 20% with annual billing
+                          {t.saveWithAnnual}
                         </h3>
                         <p className="mt-1 text-sm text-gray-600">
-                          Switch to annual billing and save 20% on your
-                          subscription. You'll still have full access to all
-                          features and can cancel anytime.
+                          {t.annualDescription}
                         </p>
                         <button
                           onClick={() => {
@@ -281,7 +400,7 @@ export default function CheckoutClient({
                           }}
                           className="mt-3 text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-md transition-colors"
                         >
-                          Switch to annual billing
+                          {t.switchToAnnual}
                         </button>
                       </div>
                     </div>
@@ -294,7 +413,7 @@ export default function CheckoutClient({
             <div className="flex-1 lg:py-12">
               <div className="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 p-6 lg:p-8">
                 <div className="text-lg font-semibold text-gray-900 mb-8">
-                  Payment details
+                  {t.paymentDetails}
                 </div>
                 <div className="paddle-checkout-frame bg-transparent" />
               </div>
@@ -306,26 +425,79 @@ export default function CheckoutClient({
       {/* Settings Card */}
       {showSettingsCard && (
         <div className="fixed bottom-4 right-4 z-50">
-          <div className="bg-white rounded-xl shadow-lg p-4 border border-blue-200">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full">
-                CHECKOUT SETTINGS
+          <div className="bg-white rounded-xl shadow-lg p-5 border border-blue-200 w-80">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                {t.checkoutSettings}
               </div>
               <button
                 onClick={() => setShowSettingsCard(false)}
-                className="text-xs text-gray-400 hover:text-gray-600 ml-auto"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                ×
+                <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">Annual Upsell:</span>
-              <Switch
-                checked={showAnnualUpsell}
-                onCheckedChange={setShowAnnualUpsell}
-                className="ml-2"
-              />
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {t.annualUpsell}
+                  </span>
+                </div>
+                <Switch
+                  checked={showAnnualUpsell}
+                  onCheckedChange={setShowAnnualUpsell}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {t.discountInput}
+                  </span>
+                </div>
+                <Switch
+                  checked={showDiscountInput}
+                  onCheckedChange={setShowDiscountInput}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Receipt className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {t.taxIdInput}
+                  </span>
+                </div>
+                <Switch
+                  checked={showTaxIdInput}
+                  onCheckedChange={setShowTaxIdInput}
+                />
+              </div>
+
+              <div className="pt-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Globe className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {t.checkoutLanguage}
+                  </span>
+                </div>
+                <Select value={checkoutLocale} onValueChange={updateLocale}>
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue placeholder="Select locale" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locales.map((locale) => (
+                      <SelectItem key={locale.code} value={locale.code}>
+                        {locale.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </div>
