@@ -14,7 +14,7 @@ export default function PreviewNav({ domain }: PreviewNavProps) {
   const previews = [
     {
       name: "Pricing",
-      path: `/pricing`,
+      path: `/`,
       icon: <LayoutDashboard className="h-4 w-4" />,
     },
     {
@@ -43,14 +43,16 @@ export default function PreviewNav({ domain }: PreviewNavProps) {
               <Link
                 href={preview.path}
                 className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-                  pathname.startsWith(preview.path)
+                  pathname === preview.path ||
+                  (pathname.startsWith(preview.path) && preview.path !== "/")
                     ? "bg-blue-50 text-blue-700 font-medium"
                     : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
                 <span
                   className={`${
-                    pathname.startsWith(preview.path)
+                    pathname === preview.path ||
+                    (pathname.startsWith(preview.path) && preview.path !== "/")
                       ? "text-blue-600"
                       : "text-gray-500"
                   }`}

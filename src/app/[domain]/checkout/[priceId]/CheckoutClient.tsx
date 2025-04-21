@@ -6,6 +6,8 @@ import Script from "next/script";
 import { initializePaddle, Paddle, Environments } from "@paddle/paddle-js";
 import type { CheckoutEventsData } from "@paddle/paddle-js/types/checkout/events";
 import throttle from "lodash.throttle";
+import { Switch } from "@/components/ui/switch";
+import { Settings } from "lucide-react";
 
 type Showcase = typeof showcase.$inferSelect;
 
@@ -23,6 +25,8 @@ export default function CheckoutClient({
     null
   );
   const [quantity, setQuantity] = useState<number>(1);
+  const [showAnnualUpsell, setShowAnnualUpsell] = useState<boolean>(true);
+  const [showSettingsCard, setShowSettingsCard] = useState<boolean>(true);
 
   const handleCheckoutEvents = (event: CheckoutEventsData) => {
     setCheckoutData(event);
@@ -243,19 +247,52 @@ export default function CheckoutClient({
                     </tbody>
                   </table>
                 </div>
+
+                {/* Annual Plan Upsell Banner */}
+                {showAnnualUpsell && (
+                  <div className="mt-6">
+                    <div className="bg-blue-50 rounded-lg p-4 flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <svg
+                          className="w-5 h-5 text-blue-600"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          Save 20% with annual billing
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-600">
+                          Switch to annual billing and save 20% on your
+                          subscription. You'll still have full access to all
+                          features and can cancel anytime.
+                        </p>
+                        <button
+                          onClick={() => {
+                            // TODO: Implement annual plan switch
+                            console.log("Switch to annual plan");
+                          }}
+                          className="mt-3 text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-md transition-colors"
+                        >
+                          Switch to annual billing
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Right Container - Payment Section - Card Design */}
             <div className="flex-1 lg:py-12">
               <div className="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 p-6 lg:p-8">
-                <Script
-                  src="https://cdn.paddle.com/paddle/v2/paddle.js"
-                  strategy="afterInteractive"
-                  onError={(e) => {
-                    console.error("Error loading Paddle script:", e);
-                  }}
-                />
                 <div className="text-lg font-semibold text-gray-900 mb-8">
                   Payment details
                 </div>
@@ -265,6 +302,34 @@ export default function CheckoutClient({
           </div>
         </div>
       </div>
+
+      {/* Settings Card */}
+      {showSettingsCard && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="bg-white rounded-xl shadow-lg p-4 border border-blue-200">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full">
+                CHECKOUT SETTINGS
+              </div>
+              <button
+                onClick={() => setShowSettingsCard(false)}
+                className="text-xs text-gray-400 hover:text-gray-600 ml-auto"
+              >
+                ×
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4 text-gray-500" />
+              <span className="text-sm text-gray-600">Annual Upsell:</span>
+              <Switch
+                checked={showAnnualUpsell}
+                onCheckedChange={setShowAnnualUpsell}
+                className="ml-2"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
