@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateShowcase } from "./actions";
+import { updateShowcase, deleteShowcase } from "./actions";
 import { showcase, product } from "@/db/schema";
 
 type Showcase = typeof showcase.$inferSelect;
@@ -48,6 +48,7 @@ export function EditShowcaseClient({
 }: EditShowcaseClientProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [companyName, setCompanyName] = useState(showcase.companyName);
   const [logoUrl, setLogoUrl] = useState(showcase.logoUrl || "");
   const [brandColor, setBrandColor] = useState(showcase.brandColor);
@@ -130,6 +131,33 @@ export function EditShowcaseClient({
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this showcase? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteShowcase(showcase.id);
+      if (!result) {
+        throw new Error("Failed to delete showcase");
+      }
+      toast.success("Showcase deleted successfully!");
+      router.push("/");
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete showcase"
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -482,6 +510,22 @@ export function EditShowcaseClient({
                 </p>
               </div>
               <div className="flex items-center gap-4">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="min-w-[140px]"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete Showcase"
+                  )}
+                </Button>
                 <Button
                   type="submit"
                   style={{ backgroundColor: brandColor }}

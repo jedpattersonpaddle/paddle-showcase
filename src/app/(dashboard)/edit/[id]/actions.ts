@@ -10,7 +10,7 @@ import {
   showcase as ShowcaseSchema,
   product as ProductSchema,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 interface UpdateShowcaseType extends ShowcaseType {
@@ -165,6 +165,36 @@ export async function updateShowcase(showcase: UpdateShowcaseType) {
     // Delete from database (this will cascade due to the foreign key constraint)
     await db.delete(ProductSchema).where(eq(ProductSchema.id, id));
   }
+
+  return true;
+}
+
+export async function deleteShowcase(showcaseId: string) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) return false;
+
+  const existingShowcase = await db
+    .select()
+    .from(ShowcaseSchema)
+    .where(
+      and(
+        eq(ShowcaseSchema.id, showcaseId),
+        eq(ShowcaseSchema.userId, session.user.id)
+      )
+    )
+    .limit(1);
+
+  if (!existingShowcase || existingShowcase.length === 0) return false;
+  if (existingShowcase[0].userId !== session.user.id) return false;
+
+  await db
+    .delete(ProductSchema)
+    .where(eq(ProductSchema.showcaseId, showcaseId));
+
+  await db.delete(ShowcaseSchema).where(eq(ShowcaseSchema.id, showcaseId));
 
   return true;
 }
