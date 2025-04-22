@@ -9,6 +9,7 @@ import {
   user as UserSchema,
   showcase as ShowcaseSchema,
   product as ProductSchema,
+  price as PriceSchema,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -56,11 +57,22 @@ export async function createShowcase(showcase: ShowcaseType) {
   });
 
   for (const product of validatedData.data.products) {
+    const productId = nanoid();
+
+    // Create product in Paddle
     const newProduct = await paddle.products.create({
       name: product.name,
       taxCategory: "standard",
     });
 
+    // Insert product into our database
+    await db.insert(ProductSchema).values({
+      id: productId,
+      showcaseId: showcaseId,
+      name: product.name,
+    });
+
+    // Create price in Paddle
     const price = await paddle.prices.create({
       productId: newProduct.id,
       description: product.name,
@@ -74,16 +86,15 @@ export async function createShowcase(showcase: ShowcaseType) {
       },
     });
 
-    await db.insert(ProductSchema).values({
+    // Insert price into our database
+    await db.insert(PriceSchema).values({
       id: nanoid(),
-      showcaseId: showcaseId,
-      name: product.name,
-      priceName: product.priceName,
+      productId: productId,
+      name: product.priceName,
       basePriceInCents: product.basePriceInCents,
       priceQuantity: product.priceQuantity,
       recurringInterval: product.recurringInterval,
       recurringFrequency: product.recurringFrequency,
-      paddleProductId: newProduct.id,
       paddlePriceId: price.id,
     });
   }
