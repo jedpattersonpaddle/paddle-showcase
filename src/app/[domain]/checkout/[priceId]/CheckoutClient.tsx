@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { showcase } from "@/db/schema";
+import { showcase, price } from "@/db/schema";
 import Script from "next/script";
 import { initializePaddle, Paddle, Environments } from "@paddle/paddle-js";
 import type { CheckoutEventsData } from "@paddle/paddle-js/types/checkout/events";
@@ -19,15 +19,20 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { checkoutTranslations, Locale } from "@/lib/translations/checkout";
 
 type Showcase = typeof showcase.$inferSelect;
+type Price = typeof price.$inferSelect;
 
 interface CheckoutClientProps {
   priceId: string;
   showcase: Showcase;
+  currentPrice: Price;
+  alternativePrice: Price | null;
 }
 
 export default function CheckoutClient({
   priceId,
   showcase,
+  currentPrice,
+  alternativePrice,
 }: CheckoutClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +46,9 @@ export default function CheckoutClient({
   const [showSettingsCard, setShowSettingsCard] = useState<boolean>(true);
   const [showDiscountInput, setShowDiscountInput] = useState<boolean>(true);
   const [showTaxIdInput, setShowTaxIdInput] = useState<boolean>(false);
+  const [isAnnual, setIsAnnual] = useState<boolean>(
+    currentPrice.recurringInterval === "year"
+  );
 
   // Get locale from URL or default to English
   const urlLocale = searchParams.get("locale") as Locale | null;
@@ -240,6 +248,17 @@ export default function CheckoutClient({
   // Get current translations
   const t = checkoutTranslations[checkoutLocale];
 
+  const handleSwitchToAnnual = () => {
+    if (alternativePrice) {
+      // Get the current domain from the URL
+      const domain = window.location.pathname.split("/")[1];
+      // Navigate to the new price route
+      router.push(
+        `/checkout/${alternativePrice.paddlePriceId}${window.location.search}`
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-gray-50 relative overflow-hidden">
       {/* Background Pattern */}
@@ -369,8 +388,8 @@ export default function CheckoutClient({
                   </table>
                 </div>
 
-                {/* Annual Plan Upsell Banner */}
-                {showAnnualUpsell && (
+                {/* Annual/Monthly Plan Upsell Banner */}
+                {showAnnualUpsell && alternativePrice && (
                   <div className="mt-6">
                     <div className="bg-blue-50 rounded-lg p-4 flex items-start gap-3">
                       <div className="flex-shrink-0">
@@ -388,19 +407,18 @@ export default function CheckoutClient({
                       </div>
                       <div className="flex-1">
                         <h3 className="text-sm font-medium text-gray-900">
-                          {t.saveWithAnnual}
+                          {isAnnual ? t.switchToMonthly : t.saveWithAnnual}
                         </h3>
                         <p className="mt-1 text-sm text-gray-600">
-                          {t.annualDescription}
+                          {isAnnual
+                            ? t.monthlyDescription
+                            : t.annualDescription}
                         </p>
                         <button
-                          onClick={() => {
-                            // TODO: Implement annual plan switch
-                            console.log("Switch to annual plan");
-                          }}
+                          onClick={handleSwitchToAnnual}
                           className="mt-3 text-sm font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-md transition-colors"
                         >
-                          {t.switchToAnnual}
+                          {isAnnual ? t.switchToMonthly : t.switchToAnnual}
                         </button>
                       </div>
                     </div>

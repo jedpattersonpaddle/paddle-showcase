@@ -26,6 +26,8 @@ export interface CheckoutTranslations {
   saveWithAnnual: string;
   annualDescription: string;
   switchToAnnual: string;
+  switchToMonthly: string;
+  monthlyDescription: string;
   paymentDetails: string;
   checkoutSettings: string;
   annualUpsell: string;
@@ -52,6 +54,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "Switch to annual billing and save 20% on your subscription. You'll still have full access to all features and can cancel anytime.",
     switchToAnnual: "Switch to annual billing",
+    switchToMonthly: "Switch to monthly billing",
+    monthlyDescription:
+      "Switch to monthly billing for more flexibility. You can always switch back to annual billing later.",
     paymentDetails: "Payment details",
     checkoutSettings: "CHECKOUT SETTINGS",
     annualUpsell: "Annual Upsell",
@@ -76,6 +81,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "Cambie a facturación anual y ahorre 20% en su suscripción. Seguirá teniendo acceso completo a todas las funciones y podrá cancelar en cualquier momento.",
     switchToAnnual: "Cambiar a facturación anual",
+    switchToMonthly: "Cambiar a facturación mensual",
+    monthlyDescription:
+      "Cambie a facturación mensual para mayor flexibilidad. Siempre puede volver a la facturación anual más tarde.",
     paymentDetails: "Detalles de pago",
     checkoutSettings: "CONFIGURACIÓN DE PAGO",
     annualUpsell: "Venta adicional anual",
@@ -100,6 +108,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "Passez à la facturation annuelle et économisez 20% sur votre abonnement. Vous conserverez un accès complet à toutes les fonctionnalités et pourrez annuler à tout moment.",
     switchToAnnual: "Passer à la facturation annuelle",
+    switchToMonthly: "Passer à la facturation mensuelle",
+    monthlyDescription:
+      "Passez à la facturation mensuelle pour plus de flexibilité. Vous pourrez toujours revenir à la facturation annuelle plus tard.",
     paymentDetails: "Détails du paiement",
     checkoutSettings: "PARAMÈTRES DE PAIEMENT",
     annualUpsell: "Vente incitative annuelle",
@@ -124,6 +135,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "Wechseln Sie zur jährlichen Abrechnung und sparen Sie 20% bei Ihrem Abonnement. Sie behalten vollen Zugriff auf alle Funktionen und können jederzeit kündigen.",
     switchToAnnual: "Zur jährlichen Abrechnung wechseln",
+    switchToMonthly: "Zur monatlichen Abrechnung wechseln",
+    monthlyDescription:
+      "Wechseln Sie zur monatlichen Abrechnung für mehr Flexibilität. Sie können jederzeit zur jährlichen Abrechnung zurückkehren.",
     paymentDetails: "Zahlungsdetails",
     checkoutSettings: "ZAHLUNGSEINSTELLUNGEN",
     annualUpsell: "Jährlicher Upsell",
@@ -148,6 +162,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "Passa alla fatturazione annuale e risparmia il 20% sul tuo abbonamento. Manterrai l'accesso completo a tutte le funzionalità e potrai annullare in qualsiasi momento.",
     switchToAnnual: "Passa alla fatturazione annuale",
+    switchToMonthly: "Passa alla fatturazione mensile",
+    monthlyDescription:
+      "Passa alla fatturazione mensile per maggiore flessibilità. Puoi sempre tornare alla fatturazione annuale in seguito.",
     paymentDetails: "Dettagli di pagamento",
     checkoutSettings: "IMPOSTAZIONI DI PAGAMENTO",
     annualUpsell: "Upsell annuale",
@@ -172,6 +189,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "Mude para cobrança anual e economize 20% em sua assinatura. Você ainda terá acesso completo a todos os recursos e poderá cancelar a qualquer momento.",
     switchToAnnual: "Mudar para cobrança anual",
+    switchToMonthly: "Mudar para cobrança mensal",
+    monthlyDescription:
+      "Mude para cobrança mensal para maior flexibilidade. Você sempre pode voltar para a cobrança anual mais tarde.",
     paymentDetails: "Detalhes do pagamento",
     checkoutSettings: "CONFIGURAÇÕES DE PAGAMENTO",
     annualUpsell: "Upsell anual",
@@ -196,6 +216,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "Schakel over naar jaarlijkse facturering en bespaar 20% op uw abonnement. U behoudt volledige toegang tot alle functies en kunt op elk moment opzeggen.",
     switchToAnnual: "Overschakelen naar jaarlijkse facturering",
+    switchToMonthly: "Overschakelen naar maandelijkse facturering",
+    monthlyDescription:
+      "Schakel over naar maandelijkse facturering voor meer flexibiliteit. U kunt altijd terugkeren naar jaarlijkse facturering.",
     paymentDetails: "Betalingsgegevens",
     checkoutSettings: "BETALINGSINSTELLINGEN",
     annualUpsell: "Jaarlijkse upsell",
@@ -220,6 +243,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "Przejdź na rozliczenie roczne i zaoszczędź 20% na swojej subskrypcji. Zachowasz pełny dostęp do wszystkich funkcji i będziesz mógł anulować w dowolnym momencie.",
     switchToAnnual: "Przejdź na rozliczenie roczne",
+    switchToMonthly: "Przejdź na rozliczenie miesięczne",
+    monthlyDescription:
+      "Przejdź na rozliczenie miesięczne, aby uzyskać większą elastyczność. Zawsze możesz wrócić do rozliczenia rocznego później.",
     paymentDetails: "Szczegóły płatności",
     checkoutSettings: "USTAWIENIA PŁATNOŚCI",
     annualUpsell: "Roczny upsell",
@@ -244,6 +270,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "Перейдите на годовую оплату и сэкономьте 20% на подписке. Вы сохраните полный доступ ко всем функциям и сможете отменить в любое время.",
     switchToAnnual: "Перейти на годовую оплату",
+    switchToMonthly: "Перейти на ежемесячную оплату",
+    monthlyDescription:
+      "Перейдите на ежемесячную оплату для большей гибкости. Вы всегда можете вернуться к годовой оплате позже.",
     paymentDetails: "Детали оплаты",
     checkoutSettings: "НАСТРОЙКИ ОПЛАТЫ",
     annualUpsell: "Годовой апсейл",
@@ -268,6 +297,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "年間請求に切り替えて、サブスクリプションを20%お得に。すべての機能に完全にアクセスでき、いつでもキャンセルできます。",
     switchToAnnual: "年間請求に切り替える",
+    switchToMonthly: "月次請求に切り替える",
+    monthlyDescription:
+      "より柔軟性を求める場合は、月次請求に切り替えてください。いつでも年間請求に戻すことができます。",
     paymentDetails: "支払い詳細",
     checkoutSettings: "チェックアウト設定",
     annualUpsell: "年間アップセル",
@@ -292,6 +324,9 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     annualDescription:
       "切换到年度计费，节省20%的订阅费用。您仍将完全访问所有功能，并可以随时取消。",
     switchToAnnual: "切换到年度计费",
+    switchToMonthly: "切换到月度计费",
+    monthlyDescription:
+      "切换到月度计费以获得更大的灵活性。您随时可以切换回年度计费。",
     paymentDetails: "支付详情",
     checkoutSettings: "结账设置",
     annualUpsell: "年度追加销售",

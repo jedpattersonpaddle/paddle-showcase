@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { showcase as ShowcaseSchema } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { showcase as ShowcaseSchema, price as PriceSchema } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import CheckoutClient from "./CheckoutClient";
 import type { Metadata } from "next";
 
@@ -22,13 +22,48 @@ export async function generateMetadata({
   };
 }
 
-async function getShowcase(domain: string) {
+async function getShowcaseAndPrices(domain: string, currentPriceId: string) {
   const showcase = await db
     .select()
     .from(ShowcaseSchema)
     .where(eq(ShowcaseSchema.subdomain, domain))
     .limit(1);
-  return showcase[0];
+
+  if (!showcase[0]) {
+    return null;
+  }
+
+  // Get the current price
+  const currentPrice = await db
+    .select()
+    .from(PriceSchema)
+    .where(eq(PriceSchema.paddlePriceId, currentPriceId))
+    .limit(1);
+
+  if (!currentPrice[0]) {
+    return null;
+  }
+
+  // Get the alternative price (monthly/annual)
+  const alternativePrice = await db
+    .select()
+    .from(PriceSchema)
+    .where(
+      and(
+        eq(PriceSchema.productId, currentPrice[0].productId),
+        eq(
+          PriceSchema.recurringInterval,
+          currentPrice[0].recurringInterval === "month" ? "year" : "month"
+        )
+      )
+    )
+    .limit(1);
+
+  return {
+    showcase: showcase[0],
+    currentPrice: currentPrice[0],
+    alternativePrice: alternativePrice[0] || null,
+  };
 }
 
 export default async function CheckoutPage({
@@ -37,13 +72,19 @@ export default async function CheckoutPage({
   params: Promise<{ domain: string; priceId: string }>;
 }) {
   const domain = decodeURIComponent((await params).domain);
-  const showcase = await getShowcase(domain);
+  const priceId = (await params).priceId;
+  const data = await getShowcaseAndPrices(domain, priceId);
 
-  if (!showcase) {
-    return <div>Showcase not found</div>;
+  if (!data) {
+    return <div>Showcase or price not found</div>;
   }
 
   return (
-    <CheckoutClient priceId={(await params).priceId} showcase={showcase} />
+    <CheckoutClient
+      priceId={priceId}
+      showcase={data.showcase}
+      currentPrice={data.currentPrice}
+      alternativePrice={data.alternativePrice}
+    />
   );
 }
