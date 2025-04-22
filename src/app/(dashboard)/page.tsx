@@ -3,7 +3,7 @@ import { showcase as ShowcaseSchema, user as UserSchema } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, ne } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, ExternalLink } from "lucide-react";
@@ -22,10 +22,16 @@ export default async function Home() {
 
   if (!session) redirect("/login");
 
-  const showcases = await db
+  const userShowcases = await db
     .select()
     .from(ShowcaseSchema)
     .where(eq(ShowcaseSchema.userId, session.user.id))
+    .leftJoin(UserSchema, eq(ShowcaseSchema.userId, UserSchema.id));
+
+  const teamShowcases = await db
+    .select()
+    .from(ShowcaseSchema)
+    .where(ne(ShowcaseSchema.userId, session.user.id))
     .leftJoin(UserSchema, eq(ShowcaseSchema.userId, UserSchema.id));
 
   return (
@@ -54,7 +60,7 @@ export default async function Home() {
               </Link>
             </div>
 
-            {showcases.length === 0 ? (
+            {userShowcases.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 p-8 text-center">
                 <div className="max-w-md mx-auto">
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -74,7 +80,7 @@ export default async function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {showcases.map((showcase) => (
+                {userShowcases.map((showcase) => (
                   <div
                     key={showcase.showcase.id}
                     className="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 overflow-hidden hover:shadow-2xl transition-shadow duration-300"
@@ -153,6 +159,106 @@ export default async function Home() {
                 ))}
               </div>
             )}
+
+            {/* Team Showcases Section */}
+            <div className="mt-12">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Team Showcases
+                </h2>
+                <p className="text-gray-500 mt-1">
+                  Showcases created by your team members
+                </p>
+              </div>
+
+              {teamShowcases.length === 0 ? (
+                <div className="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 p-8 text-center">
+                  <div className="max-w-md mx-auto">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      No team showcases yet
+                    </h3>
+                    <p className="text-gray-500">
+                      When your team members create showcases, they will appear
+                      here.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {teamShowcases.map((showcase) => (
+                    <div
+                      key={showcase.showcase.id}
+                      className="bg-white rounded-2xl shadow-xl ring-1 ring-gray-200 overflow-hidden hover:shadow-2xl transition-shadow duration-300"
+                    >
+                      <div
+                        className="h-2"
+                        style={{
+                          backgroundColor: showcase.showcase.brandColor,
+                        }}
+                      />
+                      <div className="p-6">
+                        <div className="flex items-center gap-4 mb-4">
+                          {showcase.showcase.logoUrl ? (
+                            <Image
+                              src={showcase.showcase.logoUrl}
+                              alt={showcase.showcase.companyName}
+                              className="h-12 w-12 rounded-md object-contain"
+                              width={48}
+                              height={48}
+                            />
+                          ) : (
+                            <div
+                              className="h-12 w-12 rounded-md flex items-center justify-center text-white font-bold"
+                              style={{
+                                backgroundColor: showcase.showcase.brandColor,
+                              }}
+                            >
+                              {showcase.showcase.companyName.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {showcase.showcase.companyName}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              Created{" "}
+                              {new Date(
+                                showcase.showcase.createdAt
+                              ).toLocaleDateString()}{" "}
+                              by {showcase.user?.name}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">
+                              Subdomain
+                            </span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {showcase.showcase.subdomain}.paddle-showcase.com
+                            </span>
+                          </div>
+
+                          <div className="pt-4">
+                            <Link
+                              href={`http://${showcase.showcase.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}/`}
+                              target="_blank"
+                              className="w-full"
+                            >
+                              <Button variant="outline" className="w-full">
+                                View Showcase
+                                <ExternalLink className="h-4 w-4 ml-2" />
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
