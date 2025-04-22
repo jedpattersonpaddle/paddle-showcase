@@ -16,7 +16,14 @@ import {
 } from "@/components/ui/select";
 
 type Showcase = typeof showcase.$inferSelect;
-type Product = typeof product.$inferSelect;
+type Product = typeof product.$inferSelect & {
+  price: {
+    basePriceInCents: number;
+    paddlePriceId: string;
+    recurringInterval: string;
+    recurringFrequency: number;
+  };
+};
 
 interface PricingClientProps {
   showcase: Showcase;
@@ -45,6 +52,7 @@ export default function PricingClient({
   const [paddleTaxRate, setPaddleTaxRate] = useState<number>(0);
   const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [showCountrySelector, setShowCountrySelector] = useState(true);
+  const [isLoadingPrices, setIsLoadingPrices] = useState(false);
 
   const [billingInterval, setBillingInterval] = useState<"monthly" | "annual">(
     "monthly"
@@ -61,6 +69,7 @@ export default function PricingClient({
     {}
   );
 
+  // Format price as a fallback if Paddle pricing isn't available
   const formatPrice = (
     amount: number,
     currencyCode: string = selectedCountry.currency
@@ -75,9 +84,17 @@ export default function PricingClient({
   };
 
   const getPrice = (product: Product) => {
-    if (paddlePricing) {
+    if (paddlePricing && paddlePricing.data?.details?.lineItems) {
       const lineItem = paddlePricing.data.details.lineItems.find(
-        (item: any) => item.price.productId === product.paddleProductId
+        (item: any) => {
+          const isMatchingProduct =
+            item.price.id === product.price.paddlePriceId;
+          const isMatchingInterval =
+            billingInterval === "monthly"
+              ? item.price.billingCycle.interval === "month"
+              : item.price.billingCycle.interval === "year";
+          return isMatchingProduct && isMatchingInterval;
+        }
       );
 
       if (lineItem) {
@@ -85,14 +102,52 @@ export default function PricingClient({
       }
     }
 
-    if (paddle && !paddlePricing) {
+    if (isLoadingPrices) {
       return "Loading...";
     }
 
-    return formatPrice(product.basePriceInCents);
+    return formatPrice(product.price.basePriceInCents);
   };
 
   const getPricePerMonth = (product: Product) => {
+    if (product.price.recurringInterval === "year") {
+      // If paddle pricing is available, use it for yearly plan divided by 12
+      if (paddlePricing && paddlePricing.data?.details?.lineItems) {
+        const lineItem = paddlePricing.data.details.lineItems.find(
+          (item: any) =>
+            item.price.productId === product.id &&
+            item.price.billingCycle.interval === "year"
+        );
+
+        if (lineItem) {
+          // Extract the numeric part and currency symbol
+          const total = parseFloat(lineItem.totals.total);
+          const currencySymbol = lineItem.formattedTotals.total
+            .replace(/[\d,.]/g, "")
+            .trim();
+
+          // Calculate monthly price (divide by 12) and format
+          const monthlyPrice = total / 12;
+          const formatter = new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: paddlePricing.data.currencyCode,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+            currencyDisplay: "symbol",
+          });
+
+          // Use the original currency symbol to ensure consistency
+          return (
+            currencySymbol +
+            formatter.format(monthlyPrice).replace(/[^\d,.]/g, "")
+          );
+        }
+      }
+
+      // Fallback to base calculation
+      const monthlyPrice = product.price.basePriceInCents / 12;
+      return formatPrice(monthlyPrice);
+    }
     return null;
   };
 
@@ -140,14 +195,17 @@ export default function PricingClient({
     const getPricing = async () => {
       if (!paddle) return;
 
+      setIsLoadingPrices(true);
+
       const priceItems = products.map((product) => ({
-        priceId: product.paddlePriceId,
+        priceId: product.price.paddlePriceId,
         quantity: 1,
       }));
 
       try {
         const pricing = await paddle.PricePreview({
           items: priceItems,
+          customerId: undefined,
           address: {
             countryCode: selectedCountry.code,
           },
@@ -162,11 +220,14 @@ export default function PricingClient({
         }
       } catch (error) {
         console.error("Error fetching Paddle pricing:", error);
+        setPaddlePricing(null);
+      } finally {
+        setIsLoadingPrices(false);
       }
     };
 
     getPricing();
-  }, [paddle, products, selectedCountry.code, billingInterval]);
+  }, [paddle, products, selectedCountry.code]);
 
   const CountrySelector = () => {
     if (!showCountrySelector) return null;
@@ -207,6 +268,9 @@ export default function PricingClient({
               </SelectContent>
             </Select>
           </div>
+          {isLoadingPrices && (
+            <div className="mt-2 text-xs text-gray-500">Loading prices...</div>
+          )}
         </div>
       </div>
     );
@@ -264,7 +328,13 @@ export default function PricingClient({
             {/* Pricing Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {Object.entries(productGroups).map(([name, products], index) => {
-                const product = products[0]; // Use the first product in the group
+                const product =
+                  products.find((p) =>
+                    billingInterval === "monthly"
+                      ? p.price.recurringInterval === "month"
+                      : p.price.recurringInterval === "year"
+                  ) || products[0]; // Fallback to first product if no match
+
                 const isPopular = name === "Pro";
                 const features = getFeatures(name);
 
@@ -321,7 +391,7 @@ export default function PricingClient({
                         ))}
                       </ul>
                       <Link
-                        href={`/checkout/${product.paddlePriceId}`}
+                        href={`/checkout/${product.price.paddlePriceId}`}
                         className="w-full"
                       >
                         <Button
@@ -331,8 +401,9 @@ export default function PricingClient({
                               ? "bg-blue-600 hover:bg-blue-700 text-white"
                               : "bg-gray-100 hover:bg-gray-200 text-gray-900"
                           )}
+                          disabled={isLoadingPrices}
                         >
-                          Buy Now
+                          {isLoadingPrices ? "Loading..." : "Buy Now"}
                         </Button>
                       </Link>
                     </div>

@@ -2,6 +2,7 @@ import { db } from "@/db";
 import {
   showcase as ShowcaseSchema,
   product as ProductSchema,
+  price,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
@@ -33,7 +34,8 @@ async function getShowcase(domain: string) {
     .select()
     .from(ShowcaseSchema)
     .where(eq(ShowcaseSchema.subdomain, domain))
-    .leftJoin(ProductSchema, eq(ShowcaseSchema.id, ProductSchema.showcaseId));
+    .leftJoin(ProductSchema, eq(ShowcaseSchema.id, ProductSchema.showcaseId))
+    .leftJoin(price, eq(ProductSchema.id, price.productId));
   return showcase;
 }
 
@@ -50,10 +52,17 @@ export default async function SiteHomePage({
     return <div>Showcase not found</div>;
   }
 
-  // Extract products from the showcase data and filter out null values
-  const products = showcase
+  const productsWithPrices = showcase
     .filter((item) => item.product !== null)
-    .map((item) => item.product as NonNullable<typeof item.product>);
+    .map((item) => ({
+      ...(item.product as NonNullable<typeof item.product>),
+      price: item.price as NonNullable<typeof item.price>,
+    }));
 
-  return <PricingClient showcase={showcase[0].showcase} products={products} />;
+  return (
+    <PricingClient
+      showcase={showcase[0].showcase}
+      products={productsWithPrices}
+    />
+  );
 }
