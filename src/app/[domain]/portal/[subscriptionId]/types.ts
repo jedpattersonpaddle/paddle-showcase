@@ -77,6 +77,7 @@ export interface SimplifiedSubscription {
   currencyCode: string;
   startedAt: string;
   nextBilledAt: string;
+  licenseKey: string;
   billingCycle: {
     frequency: number;
     interval: string;

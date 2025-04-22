@@ -3,13 +3,18 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { cancelSubscription, resumeSubscription } from "./actions";
+import {
+  cancelSubscription,
+  resumeSubscription,
+  resetLicenseKey,
+} from "./actions";
 import CustomerProfileCard from "./components/CustomerProfileCard";
 import PaymentMethodCard from "./components/PaymentMethodCard";
 import PaymentHistoryTable from "./components/PaymentHistoryTable";
 import PaymentDetailsDialog from "./components/PaymentDetailsDialog";
 import UpcomingPaymentCard from "./components/UpcomingPaymentCard";
 import SubscriptionOverviewCard from "./components/SubscriptionOverviewCard";
+import LicenseKeyCard from "./components/LicenseKeyCard";
 import {
   CustomerInfo,
   PaymentHistory,
@@ -153,6 +158,13 @@ export default function PortalClient({
     }
   };
 
+  const handleResetLicense = async () => {
+    const result = await resetLicenseKey(subscriptionId);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+  };
+
   const totalPrice = calculateTotalPrice();
   const formattedTotalPrice = formatCurrency(
     totalPrice.toString(),
@@ -200,6 +212,13 @@ export default function PortalClient({
                 setShowConfirmDialog(true);
               }}
             />
+
+            {subscription.licenseKey && (
+              <LicenseKeyCard
+                licenseKey={subscription.licenseKey}
+                onResetLicense={handleResetLicense}
+              />
+            )}
 
             {/* Upcoming Payment Card */}
             <UpcomingPaymentCard

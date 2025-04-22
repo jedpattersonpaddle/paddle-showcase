@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import PortalClient from "./PortalClient";
 import { paddle } from "@/lib/paddle";
 import { SimplifiedSubscription, Transaction } from "./types";
+import { db } from "@/db";
+import { subscription as SubscriptionSchema } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export const metadata: Metadata = {
   title: "Customer Portal",
@@ -112,6 +115,11 @@ export default async function PortalPage({ params }: PortalPageProps) {
   // Fetch transactions for this subscription
   const transactions = await getTransactions(subscriptionId);
 
+  const dbSubscription = await db
+    .select()
+    .from(SubscriptionSchema)
+    .where(eq(SubscriptionSchema.paddleSubscriptionId, subscription.id));
+
   // Create a plain object with only the properties we need
   const simplifiedSubscription: SimplifiedSubscription = {
     id: subscription.id,
@@ -119,6 +127,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
     currencyCode: subscription.currencyCode,
     startedAt: subscription.startedAt || "",
     nextBilledAt: subscription.nextBilledAt || "",
+    licenseKey: dbSubscription[0]?.licenseKey || "",
     billingCycle: {
       frequency: subscription.billingCycle.frequency,
       interval: subscription.billingCycle.interval,

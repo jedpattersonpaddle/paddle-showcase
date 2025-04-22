@@ -2,6 +2,10 @@
 import { paddle } from "@/lib/paddle";
 import { revalidatePath } from "next/cache";
 import { Transaction } from "./types";
+import { db } from "@/db";
+import { subscription as SubscriptionSchema } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { generateLicenseKey } from "@/lib/utils";
 
 export async function cancelSubscription(subscriptionId: string) {
   try {
@@ -77,5 +81,22 @@ export async function getUpdatePaymentMethodTransaction(
       success: false,
       error: "Failed to get update payment method transaction",
     };
+  }
+}
+
+export async function resetLicenseKey(subscriptionId: string) {
+  try {
+    const newLicenseKey = generateLicenseKey();
+
+    await db
+      .update(SubscriptionSchema)
+      .set({ licenseKey: newLicenseKey })
+      .where(eq(SubscriptionSchema.paddleSubscriptionId, subscriptionId));
+
+    revalidatePath(`/portal/${subscriptionId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error resetting license key:", error);
+    return { success: false, error: "Failed to reset license key" };
   }
 }
