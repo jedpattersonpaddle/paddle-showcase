@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { addDomainToProject } from "@/lib/vercel";
 
 export async function createShowcase(showcase: ShowcaseType) {
   const session = await auth.api.getSession({
@@ -32,13 +33,26 @@ export async function createShowcase(showcase: ShowcaseType) {
   if (!validatedData.success) return false;
 
   const showcaseId = nanoid();
+  const subdomain = validatedData.data.subdomain;
+
+  if (process.env.NODE_ENV === "production") {
+    try {
+      await addDomainToProject(
+        `${subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
+      );
+    } catch (error) {
+      console.error("Failed to add domain to Vercel:", error);
+      return false;
+    }
+  }
+
   await db.insert(ShowcaseSchema).values({
     id: showcaseId,
     userId: session.user.id,
     companyName: validatedData.data.companyName,
     logoUrl: validatedData.data.logoUrl || null,
     brandColor: validatedData.data.brandColor,
-    subdomain: validatedData.data.subdomain,
+    subdomain: subdomain,
   });
 
   for (const product of validatedData.data.products) {
