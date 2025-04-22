@@ -71,7 +71,7 @@ export default function LicenseKeyCard({
 
         <p className="text-sm text-gray-500">
           Use this license key to activate your software. Keep it secure and
-          don't share it with others.
+          don&apos;t share it with others.
         </p>
       </div>
 
