@@ -1,5 +1,8 @@
 import { paddle } from "@/lib/paddle";
-import { createSubscription } from "@/lib/webhooks/subscriptions";
+import {
+  cancelSubscription,
+  createSubscription,
+} from "@/lib/webhooks/subscriptions";
 import { EventName } from "@paddle/paddle-node-sdk";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -19,6 +22,9 @@ export async function POST(request: NextRequest) {
   switch (eventData.eventType) {
     case EventName.SubscriptionCreated:
       await createSubscription(eventData);
+      break;
+    case EventName.SubscriptionCanceled:
+      await cancelSubscription(eventData);
       break;
   }
 

@@ -1,5 +1,8 @@
 import { db } from "@/db";
-import type { SubscriptionCreatedEvent } from "@paddle/paddle-node-sdk";
+import type {
+  SubscriptionCreatedEvent,
+  SubscriptionCanceledEvent,
+} from "@paddle/paddle-node-sdk";
 import { generateLicenseKey } from "../utils";
 import { subscription as SubscriptionSchema } from "@/db/schema";
 import { generateId } from "@/lib/utils";
@@ -15,4 +18,9 @@ export async function createSubscription(
     status: subscription.data.status,
     id: generateId(),
   });
+}
+export async function cancelSubscription(
+  subscription: SubscriptionCanceledEvent
+) {
+  await db.update(SubscriptionSchema).set({ status: subscription.data.status });
 }
