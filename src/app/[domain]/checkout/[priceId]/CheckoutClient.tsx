@@ -57,8 +57,6 @@ export default function CheckoutClient({
       : "en"
   );
 
-  const [settingsVersion, setSettingsVersion] = useState<number>(0);
-
   const updateLocale = (newLocale: Locale) => {
     setCheckoutLocale(newLocale);
 
