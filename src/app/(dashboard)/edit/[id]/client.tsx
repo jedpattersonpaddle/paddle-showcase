@@ -22,14 +22,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { updateShowcase, deleteShowcase } from "./actions";
-import { showcase, product } from "@/db/schema";
+import { showcase, product, price } from "@/db/schema";
 
 type Showcase = typeof showcase.$inferSelect;
 type Product = typeof product.$inferSelect;
+type Price = typeof price.$inferSelect;
 
 interface EditShowcaseClientProps {
   showcase: Showcase;
   products: Product[];
+  prices: Price[];
 }
 
 interface ProductFormData {
@@ -45,6 +47,7 @@ interface ProductFormData {
 export function EditShowcaseClient({
   showcase,
   products,
+  prices,
 }: EditShowcaseClientProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -53,17 +56,24 @@ export function EditShowcaseClient({
   const [logoUrl, setLogoUrl] = useState(showcase.logoUrl || "");
   const [brandColor, setBrandColor] = useState(showcase.brandColor);
   const [subdomain, setSubdomain] = useState(showcase.subdomain);
+
+  // Create a map of prices by product ID
+  const priceMap = new Map(prices.map((price) => [price.productId, price]));
+
   const [formProducts, setFormProducts] = useState<ProductFormData[]>(
-    products.map((product) => ({
-      id: product.id,
-      name: product.name,
-      priceName: product.priceName,
-      basePriceInCents: product.basePriceInCents,
-      priceQuantity: product.priceQuantity,
-      recurringInterval:
-        product.recurringInterval as ProductFormData["recurringInterval"],
-      recurringFrequency: product.recurringFrequency,
-    }))
+    products.map((product) => {
+      const productPrice = priceMap.get(product.id);
+      return {
+        id: product.id,
+        name: product.name,
+        priceName: productPrice?.name || "",
+        basePriceInCents: productPrice?.basePriceInCents || 0,
+        priceQuantity: productPrice?.priceQuantity || 1,
+        recurringInterval: (productPrice?.recurringInterval ||
+          "month") as ProductFormData["recurringInterval"],
+        recurringFrequency: productPrice?.recurringFrequency || 1,
+      };
+    })
   );
 
   const addProduct = () => {
