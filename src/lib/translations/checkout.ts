@@ -34,6 +34,7 @@ export interface CheckoutTranslations {
   discountInput: string;
   taxIdInput: string;
   checkoutLanguage: string;
+  discount: string;
 }
 
 export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
@@ -63,6 +64,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "Discount Input",
     taxIdInput: "Tax ID Input",
     checkoutLanguage: "Checkout Language",
+    discount: "Discount",
   },
   es: {
     dueToday: "a pagar hoy",
@@ -90,6 +92,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "Entrada de descuento",
     taxIdInput: "Entrada de ID fiscal",
     checkoutLanguage: "Idioma de pago",
+    discount: "Descuento",
   },
   fr: {
     dueToday: "à payer aujourd'hui",
@@ -117,6 +120,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "Champ de remise",
     taxIdInput: "Champ d'ID fiscal",
     checkoutLanguage: "Langue de paiement",
+    discount: "Réduction",
   },
   de: {
     dueToday: "fällig heute",
@@ -144,6 +148,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "Rabattfeld",
     taxIdInput: "Steuer-ID-Feld",
     checkoutLanguage: "Zahlungssprache",
+    discount: "Rabatt",
   },
   it: {
     dueToday: "da pagare oggi",
@@ -171,6 +176,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "Campo sconto",
     taxIdInput: "Campo ID fiscale",
     checkoutLanguage: "Lingua di pagamento",
+    discount: "Sconto",
   },
   pt: {
     dueToday: "a pagar hoje",
@@ -198,6 +204,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "Campo de desconto",
     taxIdInput: "Campo de ID fiscal",
     checkoutLanguage: "Idioma de pagamento",
+    discount: "Desconto",
   },
   nl: {
     dueToday: "vandaag te betalen",
@@ -225,6 +232,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "Kortingsveld",
     taxIdInput: "BTW-ID veld",
     checkoutLanguage: "Betalingsstaal",
+    discount: "Korting",
   },
   pl: {
     dueToday: "do zapłaty dziś",
@@ -252,6 +260,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "Pole rabatu",
     taxIdInput: "Pole ID podatkowego",
     checkoutLanguage: "Język płatności",
+    discount: "Rabat",
   },
   ru: {
     dueToday: "к оплате сегодня",
@@ -279,6 +288,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "Поле скидки",
     taxIdInput: "Поле налогового идентификатора",
     checkoutLanguage: "Язык оплаты",
+    discount: "Скидка",
   },
   ja: {
     dueToday: "本日支払い",
@@ -306,6 +316,7 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "割引入力",
     taxIdInput: "税務ID入力",
     checkoutLanguage: "チェックアウト言語",
+    discount: "割引",
   },
   zh: {
     dueToday: "今天到期",
@@ -333,5 +344,6 @@ export const checkoutTranslations: Record<Locale, CheckoutTranslations> = {
     discountInput: "折扣输入",
     taxIdInput: "税务ID输入",
     checkoutLanguage: "结账语言",
+    discount: "折扣",
   },
 };

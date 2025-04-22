@@ -179,6 +179,7 @@ export default function CheckoutClient({
                 quantity,
               },
             ],
+            discountCode,
           });
         }
       });
@@ -336,6 +337,23 @@ export default function CheckoutClient({
                           )}
                         </td>
                       </tr>
+
+                      {checkoutData?.totals?.discount
+                        ? checkoutData.totals.discount > 0 && (
+                            <tr>
+                              <td className="py-4 text-gray-500">
+                                {t.discount}
+                              </td>
+                              <td className="py-4 text-right text-green-600">
+                                -
+                                {formatPrice(
+                                  checkoutData.totals.discount,
+                                  checkoutData?.currency_code
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        : null}
 
                       <tr>
                         <td className="py-4 text-gray-500">{t.taxes}</td>
