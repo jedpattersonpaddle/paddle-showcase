@@ -58,13 +58,11 @@ export const verification = pgTable("verification", {
 
 export const showcase = pgTable("showcase", {
   id: text("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
   companyName: text("company_name").notNull(),
   logoUrl: text("logo_url"),
   brandColor: text("brand_color").notNull(),
-  subdomain: text("subdomain").notNull().unique(),
+  subdomain: text("subdomain").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -75,12 +73,20 @@ export const product = pgTable("product", {
     .notNull()
     .references(() => showcase.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  priceName: text("price_name").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const price = pgTable("price", {
+  id: text("id").primaryKey(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => product.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
   basePriceInCents: integer("base_price_in_cents").notNull(),
   priceQuantity: integer("price_quantity").notNull(),
   recurringInterval: text("recurring_interval").notNull(),
   recurringFrequency: integer("recurring_frequency").notNull(),
-  paddleProductId: text("paddle_product_id").notNull(),
   paddlePriceId: text("paddle_price_id").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

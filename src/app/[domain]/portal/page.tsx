@@ -1,7 +1,7 @@
 import { paddle } from "@/lib/paddle";
 import { db } from "@/db";
-import { showcase, product } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { showcase, product, price } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
@@ -47,11 +47,41 @@ export default async function PortalPage({
     .from(product)
     .where(eq(product.showcaseId, showcaseData[0].id));
 
+  const prices = await db
+    .select()
+    .from(price)
+    .where(
+      inArray(
+        price.productId,
+        products.map((p) => p.id)
+      )
+    );
+
+  const productsWithPrices = products.map((product) => ({
+    ...product,
+    prices: prices
+      .filter((price) => price.productId === product.id)
+      .map((price) => ({
+        id: price.id,
+        name: price.name,
+        basePriceInCents: price.basePriceInCents,
+        priceQuantity: price.priceQuantity,
+        recurringInterval: price.recurringInterval as
+          | "day"
+          | "week"
+          | "month"
+          | "year"
+          | "one-time",
+        recurringFrequency: price.recurringFrequency,
+        paddlePriceId: price.paddlePriceId,
+      })),
+  }));
+
   const subscriptions = await Promise.all(
-    products.map(async (product) => {
+    productsWithPrices.map(async (product) => {
       try {
         const subsCollection = await paddle.subscriptions.list({
-          priceId: [product.paddlePriceId],
+          priceId: product.prices.map((p) => p.paddlePriceId),
         });
 
         const subs = await subsCollection.next();

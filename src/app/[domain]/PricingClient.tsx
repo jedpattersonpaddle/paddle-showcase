@@ -16,7 +16,16 @@ import {
 } from "@/components/ui/select";
 
 type Showcase = typeof showcase.$inferSelect;
-type Product = typeof product.$inferSelect;
+type Product = typeof product.$inferSelect & {
+  prices: {
+    id: string;
+    name: string;
+    basePriceInCents: number;
+    priceQuantity: number;
+    recurringInterval: "day" | "week" | "month" | "year" | "one-time";
+    recurringFrequency: number;
+  }[];
+};
 
 interface PricingClientProps {
   showcase: Showcase;
@@ -40,12 +49,6 @@ export default function PricingClient({
   showcase,
   products,
 }: PricingClientProps) {
-  const paddle = usePaddle();
-  const [paddlePricing, setPaddlePricing] = useState<any>(null);
-  const [paddleTaxRate, setPaddleTaxRate] = useState<number>(0);
-  const [selectedCountry, setSelectedCountry] = useState(countries[0]);
-  const [showCountrySelector, setShowCountrySelector] = useState(true);
-
   const [billingInterval, setBillingInterval] = useState<"monthly" | "annual">(
     "monthly"
   );
@@ -61,39 +64,32 @@ export default function PricingClient({
     {}
   );
 
-  const formatPrice = (
-    amount: number,
-    currencyCode: string = selectedCountry.currency
-  ) => {
-    const formatter = new Intl.NumberFormat("en-US", {
+  const formatPrice = (cents: number) => {
+    return (cents / 100).toLocaleString("en-US", {
       style: "currency",
-      currency: currencyCode,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      currency: "USD",
     });
-    return formatter.format(amount / 100);
   };
 
-  const getPrice = (product: Product) => {
-    if (paddlePricing) {
-      const lineItem = paddlePricing.data.details.lineItems.find(
-        (item: any) => item.price.productId === product.paddleProductId
-      );
+  const getPrice = (product: Product, interval: "monthly" | "annual") => {
+    const price = product.prices.find((p) =>
+      interval === "monthly"
+        ? p.recurringInterval === "month"
+        : p.recurringInterval === "year"
+    );
 
-      if (lineItem) {
-        return lineItem.formattedTotals.total;
-      }
-    }
+    if (!price) return null;
 
-    if (paddle && !paddlePricing) {
-      return "Loading...";
-    }
-
-    return formatPrice(product.basePriceInCents);
+    return formatPrice(price.basePriceInCents);
   };
 
   const getPricePerMonth = (product: Product) => {
-    return null;
+    const annualPrice = product.prices.find(
+      (p) => p.recurringInterval === "year"
+    );
+    if (!annualPrice) return null;
+
+    return formatPrice(Math.round(annualPrice.basePriceInCents / 12));
   };
 
   const getFeatures = (productName: string) => {
@@ -133,82 +129,6 @@ export default function PricingClient({
         "Feature 4",
         "Feature 5",
       ]
-    );
-  };
-
-  useEffect(() => {
-    const getPricing = async () => {
-      if (!paddle) return;
-
-      const priceItems = products.map((product) => ({
-        priceId: product.paddlePriceId,
-        quantity: 1,
-      }));
-
-      try {
-        const pricing = await paddle.PricePreview({
-          items: priceItems,
-          address: {
-            countryCode: selectedCountry.code,
-          },
-        });
-
-        setPaddlePricing(pricing);
-
-        if (pricing?.data?.details?.lineItems?.length > 0) {
-          const taxRate =
-            parseFloat(pricing.data.details.lineItems[0].taxRate) * 100;
-          setPaddleTaxRate(taxRate);
-        }
-      } catch (error) {
-        console.error("Error fetching Paddle pricing:", error);
-      }
-    };
-
-    getPricing();
-  }, [paddle, products, selectedCountry.code, billingInterval]);
-
-  const CountrySelector = () => {
-    if (!showCountrySelector) return null;
-
-    return (
-      <div className="fixed bottom-8 right-8 z-50">
-        <div className="bg-white rounded-xl shadow-lg p-4 border border-blue-200">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full">
-              PREVIEW LOCALIZED PRICING
-            </div>
-            <button
-              onClick={() => setShowCountrySelector(false)}
-              className="text-xs text-gray-400 hover:text-gray-600 ml-auto"
-            >
-              ×
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-gray-500" />
-            <span className="text-sm text-gray-600">View prices in:</span>
-            <Select
-              value={selectedCountry.code}
-              onValueChange={(value) => {
-                const country = countries.find((c) => c.code === value);
-                if (country) setSelectedCountry(country);
-              }}
-            >
-              <SelectTrigger className="w-[140px] h-8 text-sm">
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
-              <SelectContent>
-                {countries.map((country) => (
-                  <SelectItem key={country.code} value={country.code}>
-                    {country.name} ({country.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
     );
   };
 
@@ -264,9 +184,11 @@ export default function PricingClient({
             {/* Pricing Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {Object.entries(productGroups).map(([name, products], index) => {
-                const product = products[0]; // Use the first product in the group
+                const product = products[0];
                 const isPopular = name === "Pro";
                 const features = getFeatures(name);
+                const monthlyPrice = getPrice(product, "monthly");
+                const annualPrice = getPrice(product, "annual");
 
                 return (
                   <div
@@ -291,7 +213,9 @@ export default function PricingClient({
                       </h3>
                       <div className="mb-4">
                         <span className="text-4xl font-bold">
-                          {getPrice(product)}
+                          {billingInterval === "monthly"
+                            ? monthlyPrice
+                            : annualPrice}
                         </span>
                         {billingInterval === "annual" && (
                           <span className="text-gray-500 ml-2">/year</span>
@@ -307,11 +231,6 @@ export default function PricingClient({
                             annually
                           </p>
                         )}
-                      {paddleTaxRate > 0 && (
-                        <p className="text-sm text-gray-500 mb-4">
-                          Includes {paddleTaxRate}% tax
-                        </p>
-                      )}
                       <ul className="space-y-3 mb-6">
                         {features.map((feature, i) => (
                           <li key={i} className="flex items-start">
@@ -321,7 +240,15 @@ export default function PricingClient({
                         ))}
                       </ul>
                       <Link
-                        href={`/checkout/${product.paddlePriceId}`}
+                        href={`/checkout/${
+                          billingInterval === "monthly"
+                            ? product.prices.find(
+                                (p) => p.recurringInterval === "month"
+                              )?.id
+                            : product.prices.find(
+                                (p) => p.recurringInterval === "year"
+                              )?.id
+                        }`}
                         className="w-full"
                       >
                         <Button
@@ -388,9 +315,6 @@ export default function PricingClient({
           </div>
         </div>
       </div>
-
-      {/* Country Selector */}
-      <CountrySelector />
     </div>
   );
 }

@@ -23,14 +23,19 @@ import {
 } from "@/components/ui/select";
 import { createShowcase } from "./actions";
 
-interface Product {
+interface Price {
   id: string;
   name: string;
-  priceName: string;
   basePriceInCents: number;
   priceQuantity: number;
   recurringInterval: "day" | "week" | "month" | "year" | "one-time";
   recurringFrequency: number;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  prices: Price[];
 }
 
 export function CreateShowcaseClient() {
@@ -44,29 +49,68 @@ export function CreateShowcaseClient() {
     {
       id: "1",
       name: "Basic Plan",
-      priceName: "Monthly",
-      basePriceInCents: 2900,
-      priceQuantity: 1,
-      recurringInterval: "month",
-      recurringFrequency: 1,
+      prices: [
+        {
+          id: "1-1",
+          name: "Monthly",
+          basePriceInCents: 2900,
+          priceQuantity: 1,
+          recurringInterval: "month",
+          recurringFrequency: 1,
+        },
+        {
+          id: "1-2",
+          name: "Annual",
+          basePriceInCents: 29000,
+          priceQuantity: 1,
+          recurringInterval: "year",
+          recurringFrequency: 1,
+        },
+      ],
     },
     {
       id: "2",
       name: "Pro Plan",
-      priceName: "Monthly",
-      basePriceInCents: 4900,
-      priceQuantity: 1,
-      recurringInterval: "month",
-      recurringFrequency: 1,
+      prices: [
+        {
+          id: "2-1",
+          name: "Monthly",
+          basePriceInCents: 4900,
+          priceQuantity: 1,
+          recurringInterval: "month",
+          recurringFrequency: 1,
+        },
+        {
+          id: "2-2",
+          name: "Annual",
+          basePriceInCents: 49000,
+          priceQuantity: 1,
+          recurringInterval: "year",
+          recurringFrequency: 1,
+        },
+      ],
     },
     {
       id: "3",
       name: "Enterprise Plan",
-      priceName: "Monthly",
-      basePriceInCents: 9900,
-      priceQuantity: 1,
-      recurringInterval: "month",
-      recurringFrequency: 1,
+      prices: [
+        {
+          id: "3-1",
+          name: "Monthly",
+          basePriceInCents: 9900,
+          priceQuantity: 1,
+          recurringInterval: "month",
+          recurringFrequency: 1,
+        },
+        {
+          id: "3-2",
+          name: "Annual",
+          basePriceInCents: 99000,
+          priceQuantity: 1,
+          recurringInterval: "year",
+          recurringFrequency: 1,
+        },
+      ],
     },
   ]);
 
@@ -76,11 +120,16 @@ export function CreateShowcaseClient() {
       {
         id: (products.length + 1).toString(),
         name: "",
-        priceName: "",
-        basePriceInCents: 0,
-        priceQuantity: 1,
-        recurringInterval: "month",
-        recurringFrequency: 1,
+        prices: [
+          {
+            id: `${products.length + 1}-1`,
+            name: "Monthly",
+            basePriceInCents: 0,
+            priceQuantity: 1,
+            recurringInterval: "month",
+            recurringFrequency: 1,
+          },
+        ],
       },
     ]);
   };
@@ -91,10 +140,65 @@ export function CreateShowcaseClient() {
     }
   };
 
+  const addPrice = (productId: string) => {
+    setProducts(
+      products.map((product) =>
+        product.id === productId
+          ? {
+              ...product,
+              prices: [
+                ...product.prices,
+                {
+                  id: `${productId}-${product.prices.length + 1}`,
+                  name: "",
+                  basePriceInCents: 0,
+                  priceQuantity: 1,
+                  recurringInterval: "month",
+                  recurringFrequency: 1,
+                },
+              ],
+            }
+          : product
+      )
+    );
+  };
+
+  const removePrice = (productId: string, priceId: string) => {
+    setProducts(
+      products.map((product) =>
+        product.id === productId
+          ? {
+              ...product,
+              prices: product.prices.filter((price) => price.id !== priceId),
+            }
+          : product
+      )
+    );
+  };
+
   const updateProduct = (id: string, updatedProduct: Partial<Product>) => {
     setProducts(
       products.map((product) =>
         product.id === id ? { ...product, ...updatedProduct } : product
+      )
+    );
+  };
+
+  const updatePrice = (
+    productId: string,
+    priceId: string,
+    updatedPrice: Partial<Price>
+  ) => {
+    setProducts(
+      products.map((product) =>
+        product.id === productId
+          ? {
+              ...product,
+              prices: product.prices.map((price) =>
+                price.id === priceId ? { ...price, ...updatedPrice } : price
+              ),
+            }
+          : product
       )
     );
   };
@@ -311,153 +415,193 @@ export function CreateShowcaseClient() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-4 space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor={`product-name-${product.id}`}
-                            className="text-sm"
-                          >
-                            Product Name
-                          </Label>
-                          <Input
-                            id={`product-name-${product.id}`}
-                            value={product.name}
-                            onChange={(e) =>
-                              updateProduct(product.id, {
-                                name: e.target.value,
-                              })
-                            }
-                            placeholder="e.g. Premium Plan"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor={`price-name-${product.id}`}
-                            className="text-sm"
-                          >
-                            Price Name
-                          </Label>
-                          <Input
-                            id={`price-name-${product.id}`}
-                            value={product.priceName}
-                            onChange={(e) =>
-                              updateProduct(product.id, {
-                                priceName: e.target.value,
-                              })
-                            }
-                            placeholder="e.g. Monthly Plan"
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor={`product-name-${product.id}`}
+                          className="text-sm"
+                        >
+                          Product Name
+                        </Label>
+                        <Input
+                          id={`product-name-${product.id}`}
+                          value={product.name}
+                          onChange={(e) =>
+                            updateProduct(product.id, {
+                              name: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. Premium Plan"
+                        />
                       </div>
 
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor={`base-price-${product.id}`}
-                            className="text-sm"
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium text-gray-900">
+                            Prices
+                          </h4>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addPrice(product.id)}
+                            className="text-blue-600 hover:text-blue-700"
                           >
-                            Base Price (in cents)
-                          </Label>
-                          <Input
-                            id={`base-price-${product.id}`}
-                            type="number"
-                            value={product.basePriceInCents}
-                            onChange={(e) =>
-                              updateProduct(product.id, {
-                                basePriceInCents: parseInt(e.target.value),
-                              })
-                            }
-                            placeholder="0"
-                            min="0"
-                          />
-                          <p className="text-xs text-gray-500">
-                            {formatCurrency(product.basePriceInCents)}
-                          </p>
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Price
+                          </Button>
                         </div>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor={`price-quantity-${product.id}`}
-                            className="text-sm"
-                          >
-                            Price Quantity
-                          </Label>
-                          <Input
-                            id={`price-quantity-${product.id}`}
-                            type="number"
-                            value={product.priceQuantity}
-                            onChange={(e) =>
-                              updateProduct(product.id, {
-                                priceQuantity: parseInt(e.target.value),
-                              })
-                            }
-                            placeholder="1"
-                            min="1"
-                          />
-                          <p className="text-xs text-gray-500">
-                            Initial quantity loaded in checkout
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor={`recurring-interval-${product.id}`}
-                            className="text-sm"
+                        {product.prices.map((price, priceIndex) => (
+                          <Card
+                            key={price.id}
+                            className="border shadow-sm bg-gray-50"
                           >
-                            Recurring Interval
-                          </Label>
-                          <Select
-                            value={product.recurringInterval}
-                            onValueChange={(value) =>
-                              updateProduct(product.id, {
-                                recurringInterval:
-                                  value as Product["recurringInterval"],
-                              })
-                            }
-                          >
-                            <SelectTrigger
-                              id={`recurring-interval-${product.id}`}
-                            >
-                              <SelectValue placeholder="Select interval" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="day">Daily</SelectItem>
-                              <SelectItem value="week">Weekly</SelectItem>
-                              <SelectItem value="month">Monthly</SelectItem>
-                              <SelectItem value="year">Yearly</SelectItem>
-                              <SelectItem value="one-time">One Time</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor={`recurring-frequency-${product.id}`}
-                            className="text-sm"
-                          >
-                            Recurring Frequency
-                          </Label>
-                          <Input
-                            id={`recurring-frequency-${product.id}`}
-                            type="number"
-                            value={product.recurringFrequency}
-                            onChange={(e) =>
-                              updateProduct(product.id, {
-                                recurringFrequency: parseInt(e.target.value),
-                              })
-                            }
-                            placeholder="1"
-                            min="1"
-                            disabled={product.recurringInterval === "one-time"}
-                          />
-                          <p className="text-xs text-gray-500">
-                            {product.recurringInterval === "one-time"
-                              ? "Not applicable for one-time purchases"
-                              : `Every ${product.recurringFrequency} ${
-                                  product.recurringInterval
-                                }${product.recurringFrequency > 1 ? "s" : ""}`}
-                          </p>
-                        </div>
+                            <CardContent className="p-4 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h5 className="text-sm font-medium text-gray-900">
+                                  Price {priceIndex + 1}
+                                </h5>
+                                {product.prices.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      removePrice(product.id, price.id)
+                                    }
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Remove
+                                  </Button>
+                                )}
+                              </div>
+
+                              <div className="grid md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label
+                                    htmlFor={`price-name-${price.id}`}
+                                    className="text-sm"
+                                  >
+                                    Price Name
+                                  </Label>
+                                  <Input
+                                    id={`price-name-${price.id}`}
+                                    value={price.name}
+                                    onChange={(e) =>
+                                      updatePrice(product.id, price.id, {
+                                        name: e.target.value,
+                                      })
+                                    }
+                                    placeholder="e.g. Monthly Plan"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label
+                                    htmlFor={`base-price-${price.id}`}
+                                    className="text-sm"
+                                  >
+                                    Base Price (in cents)
+                                  </Label>
+                                  <Input
+                                    id={`base-price-${price.id}`}
+                                    type="number"
+                                    value={price.basePriceInCents}
+                                    onChange={(e) =>
+                                      updatePrice(product.id, price.id, {
+                                        basePriceInCents: parseInt(
+                                          e.target.value
+                                        ),
+                                      })
+                                    }
+                                    placeholder="0"
+                                    min="0"
+                                  />
+                                  <p className="text-xs text-gray-500">
+                                    {formatCurrency(price.basePriceInCents)}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="grid md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label
+                                    htmlFor={`recurring-interval-${price.id}`}
+                                    className="text-sm"
+                                  >
+                                    Recurring Interval
+                                  </Label>
+                                  <Select
+                                    value={price.recurringInterval}
+                                    onValueChange={(value) =>
+                                      updatePrice(product.id, price.id, {
+                                        recurringInterval:
+                                          value as Price["recurringInterval"],
+                                      })
+                                    }
+                                  >
+                                    <SelectTrigger
+                                      id={`recurring-interval-${price.id}`}
+                                    >
+                                      <SelectValue placeholder="Select interval" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="day">Daily</SelectItem>
+                                      <SelectItem value="week">
+                                        Weekly
+                                      </SelectItem>
+                                      <SelectItem value="month">
+                                        Monthly
+                                      </SelectItem>
+                                      <SelectItem value="year">
+                                        Yearly
+                                      </SelectItem>
+                                      <SelectItem value="one-time">
+                                        One Time
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label
+                                    htmlFor={`recurring-frequency-${price.id}`}
+                                    className="text-sm"
+                                  >
+                                    Recurring Frequency
+                                  </Label>
+                                  <Input
+                                    id={`recurring-frequency-${price.id}`}
+                                    type="number"
+                                    value={price.recurringFrequency}
+                                    onChange={(e) =>
+                                      updatePrice(product.id, price.id, {
+                                        recurringFrequency: parseInt(
+                                          e.target.value
+                                        ),
+                                      })
+                                    }
+                                    placeholder="1"
+                                    min="1"
+                                    disabled={
+                                      price.recurringInterval === "one-time"
+                                    }
+                                  />
+                                  <p className="text-xs text-gray-500">
+                                    {price.recurringInterval === "one-time"
+                                      ? "Not applicable for one-time purchases"
+                                      : `Every ${price.recurringFrequency} ${
+                                          price.recurringInterval
+                                        }${
+                                          price.recurringFrequency > 1
+                                            ? "s"
+                                            : ""
+                                        }`}
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>

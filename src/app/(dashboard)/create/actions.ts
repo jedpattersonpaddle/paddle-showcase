@@ -9,6 +9,7 @@ import {
   user as UserSchema,
   showcase as ShowcaseSchema,
   product as ProductSchema,
+  price as PriceSchema,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -61,31 +62,38 @@ export async function createShowcase(showcase: ShowcaseType) {
       taxCategory: "standard",
     });
 
-    const price = await paddle.prices.create({
-      productId: newProduct.id,
-      description: product.name,
-      unitPrice: {
-        amount: product.basePriceInCents.toString(),
-        currencyCode: "USD",
-      },
-      billingCycle: {
-        frequency: product.recurringFrequency,
-        interval: product.recurringInterval as Interval,
-      },
-    });
-
+    const productId = nanoid();
     await db.insert(ProductSchema).values({
-      id: nanoid(),
+      id: productId,
       showcaseId: showcaseId,
       name: product.name,
-      priceName: product.priceName,
-      basePriceInCents: product.basePriceInCents,
-      priceQuantity: product.priceQuantity,
-      recurringInterval: product.recurringInterval,
-      recurringFrequency: product.recurringFrequency,
-      paddleProductId: newProduct.id,
-      paddlePriceId: price.id,
     });
+
+    for (const price of product.prices) {
+      const paddlePrice = await paddle.prices.create({
+        productId: newProduct.id,
+        description: `${product.name} - ${price.name}`,
+        unitPrice: {
+          amount: price.basePriceInCents.toString(),
+          currencyCode: "USD",
+        },
+        billingCycle: {
+          frequency: price.recurringFrequency,
+          interval: price.recurringInterval as Interval,
+        },
+      });
+
+      await db.insert(PriceSchema).values({
+        id: nanoid(),
+        productId: productId,
+        name: price.name,
+        basePriceInCents: price.basePriceInCents,
+        priceQuantity: price.priceQuantity,
+        recurringInterval: price.recurringInterval,
+        recurringFrequency: price.recurringFrequency,
+        paddlePriceId: paddlePrice.id,
+      });
+    }
   }
 
   return showcaseId;
