@@ -2,9 +2,11 @@ import { db } from "@/db";
 import {
   showcase as ShowcaseSchema,
   product as ProductSchema,
-  price as PriceSchema,
 } from "@/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 import PricingClient from "./PricingClient";
 import type { Metadata } from "next";
 
@@ -31,48 +33,8 @@ async function getShowcase(domain: string) {
     .select()
     .from(ShowcaseSchema)
     .where(eq(ShowcaseSchema.subdomain, domain))
-    .limit(1);
-
-  if (!showcase || showcase.length === 0) {
-    return null;
-  }
-
-  const products = await db
-    .select()
-    .from(ProductSchema)
-    .where(eq(ProductSchema.showcaseId, showcase[0].id));
-
-  const prices = await db
-    .select()
-    .from(PriceSchema)
-    .where(
-      inArray(
-        PriceSchema.productId,
-        products.map((p) => p.id)
-      )
-    );
-
-  return {
-    showcase: showcase[0],
-    products: products.map((product) => ({
-      ...product,
-      prices: prices
-        .filter((price) => price.productId === product.id)
-        .map((price) => ({
-          id: price.id,
-          name: price.name,
-          basePriceInCents: price.basePriceInCents,
-          priceQuantity: price.priceQuantity,
-          recurringInterval: price.recurringInterval as
-            | "day"
-            | "week"
-            | "month"
-            | "year"
-            | "one-time",
-          recurringFrequency: price.recurringFrequency,
-        })),
-    })),
-  };
+    .leftJoin(ProductSchema, eq(ShowcaseSchema.id, ProductSchema.showcaseId));
+  return showcase;
 }
 
 export default async function SiteHomePage({
@@ -81,11 +43,17 @@ export default async function SiteHomePage({
   params: Promise<{ domain: string }>;
 }) {
   const domain = decodeURIComponent((await params).domain);
-  const data = await getShowcase(domain);
 
-  if (!data) {
+  const showcase = await getShowcase(domain);
+
+  if (!showcase || showcase.length === 0) {
     return <div>Showcase not found</div>;
   }
 
-  return <PricingClient showcase={data.showcase} products={data.products} />;
+  // Extract products from the showcase data and filter out null values
+  const products = showcase
+    .filter((item) => item.product !== null)
+    .map((item) => item.product as NonNullable<typeof item.product>);
+
+  return <PricingClient showcase={showcase[0].showcase} products={products} />;
 }

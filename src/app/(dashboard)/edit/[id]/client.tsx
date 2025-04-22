@@ -25,16 +25,7 @@ import { updateShowcase, deleteShowcase } from "./actions";
 import { showcase, product } from "@/db/schema";
 
 type Showcase = typeof showcase.$inferSelect;
-type Product = typeof product.$inferSelect & {
-  prices: {
-    id: string;
-    name: string;
-    basePriceInCents: number;
-    priceQuantity: number;
-    recurringInterval: "day" | "week" | "month" | "year" | "one-time";
-    recurringFrequency: number;
-  }[];
-};
+type Product = typeof product.$inferSelect;
 
 interface EditShowcaseClientProps {
   showcase: Showcase;
@@ -44,14 +35,11 @@ interface EditShowcaseClientProps {
 interface ProductFormData {
   id: string;
   name: string;
-  prices: {
-    id: string;
-    name: string;
-    basePriceInCents: number;
-    priceQuantity: number;
-    recurringInterval: "day" | "week" | "month" | "year" | "one-time";
-    recurringFrequency: number;
-  }[];
+  priceName: string;
+  basePriceInCents: number;
+  priceQuantity: number;
+  recurringInterval: "day" | "week" | "month" | "year" | "one-time";
+  recurringFrequency: number;
 }
 
 export function EditShowcaseClient({
@@ -69,15 +57,12 @@ export function EditShowcaseClient({
     products.map((product) => ({
       id: product.id,
       name: product.name,
-      prices: product.prices.map((price) => ({
-        id: price.id,
-        name: price.name,
-        basePriceInCents: price.basePriceInCents,
-        priceQuantity: price.priceQuantity,
-        recurringInterval:
-          price.recurringInterval as ProductFormData["prices"][0]["recurringInterval"],
-        recurringFrequency: price.recurringFrequency,
-      })),
+      priceName: product.priceName,
+      basePriceInCents: product.basePriceInCents,
+      priceQuantity: product.priceQuantity,
+      recurringInterval:
+        product.recurringInterval as ProductFormData["recurringInterval"],
+      recurringFrequency: product.recurringFrequency,
     }))
   );
 
@@ -87,16 +72,11 @@ export function EditShowcaseClient({
       {
         id: crypto.randomUUID(),
         name: "",
-        prices: [
-          {
-            id: crypto.randomUUID(),
-            name: "",
-            basePriceInCents: 0,
-            priceQuantity: 1,
-            recurringInterval: "month",
-            recurringFrequency: 1,
-          },
-        ],
+        priceName: "",
+        basePriceInCents: 0,
+        priceQuantity: 1,
+        recurringInterval: "month",
+        recurringFrequency: 1,
       },
     ]);
   };
@@ -385,15 +365,10 @@ export function EditShowcaseClient({
                           </Label>
                           <Input
                             id={`price-name-${product.id}`}
-                            value={product.prices[0].name}
+                            value={product.priceName}
                             onChange={(e) =>
                               updateProduct(product.id, {
-                                prices: [
-                                  {
-                                    ...product.prices[0],
-                                    name: e.target.value,
-                                  },
-                                ],
+                                priceName: e.target.value,
                               })
                             }
                             placeholder="e.g. Monthly Plan"
@@ -412,22 +387,17 @@ export function EditShowcaseClient({
                           <Input
                             id={`base-price-${product.id}`}
                             type="number"
-                            value={product.prices[0].basePriceInCents}
+                            value={product.basePriceInCents}
                             onChange={(e) =>
                               updateProduct(product.id, {
-                                prices: [
-                                  {
-                                    ...product.prices[0],
-                                    basePriceInCents: parseInt(e.target.value),
-                                  },
-                                ],
+                                basePriceInCents: parseInt(e.target.value),
                               })
                             }
                             placeholder="0"
                             min="0"
                           />
                           <p className="text-xs text-gray-500">
-                            {formatCurrency(product.prices[0].basePriceInCents)}
+                            {formatCurrency(product.basePriceInCents)}
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -440,15 +410,10 @@ export function EditShowcaseClient({
                           <Input
                             id={`price-quantity-${product.id}`}
                             type="number"
-                            value={product.prices[0].priceQuantity}
+                            value={product.priceQuantity}
                             onChange={(e) =>
                               updateProduct(product.id, {
-                                prices: [
-                                  {
-                                    ...product.prices[0],
-                                    priceQuantity: parseInt(e.target.value),
-                                  },
-                                ],
+                                priceQuantity: parseInt(e.target.value),
                               })
                             }
                             placeholder="1"
@@ -469,16 +434,11 @@ export function EditShowcaseClient({
                             Recurring Interval
                           </Label>
                           <Select
-                            value={product.prices[0].recurringInterval}
+                            value={product.recurringInterval}
                             onValueChange={(value) =>
                               updateProduct(product.id, {
-                                prices: [
-                                  {
-                                    ...product.prices[0],
-                                    recurringInterval:
-                                      value as ProductFormData["prices"][0]["recurringInterval"],
-                                  },
-                                ],
+                                recurringInterval:
+                                  value as ProductFormData["recurringInterval"],
                               })
                             }
                           >
@@ -506,35 +466,22 @@ export function EditShowcaseClient({
                           <Input
                             id={`recurring-frequency-${product.id}`}
                             type="number"
-                            value={product.prices[0].recurringFrequency}
+                            value={product.recurringFrequency}
                             onChange={(e) =>
                               updateProduct(product.id, {
-                                prices: [
-                                  {
-                                    ...product.prices[0],
-                                    recurringFrequency: parseInt(
-                                      e.target.value
-                                    ),
-                                  },
-                                ],
+                                recurringFrequency: parseInt(e.target.value),
                               })
                             }
                             placeholder="1"
                             min="1"
-                            disabled={
-                              product.prices[0].recurringInterval === "one-time"
-                            }
+                            disabled={product.recurringInterval === "one-time"}
                           />
                           <p className="text-xs text-gray-500">
-                            {product.prices[0].recurringInterval === "one-time"
+                            {product.recurringInterval === "one-time"
                               ? "Not applicable for one-time purchases"
-                              : `Every ${
-                                  product.prices[0].recurringFrequency
-                                } ${product.prices[0].recurringInterval}${
-                                  product.prices[0].recurringFrequency > 1
-                                    ? "s"
-                                    : ""
-                                }`}
+                              : `Every ${product.recurringFrequency} ${
+                                  product.recurringInterval
+                                }${product.recurringFrequency > 1 ? "s" : ""}`}
                           </p>
                         </div>
                       </div>

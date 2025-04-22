@@ -9,9 +9,8 @@ import {
   user as UserSchema,
   showcase as ShowcaseSchema,
   product as ProductSchema,
-  price as PriceSchema,
 } from "@/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 interface UpdateShowcaseType extends ShowcaseType {
@@ -42,11 +41,18 @@ export async function updateShowcase(showcase: UpdateShowcaseType) {
   if (!existingShowcase || existingShowcase.length === 0) return false;
   if (existingShowcase[0].userId !== session.user.id) return false;
 
-  const validatedData = await showcaseSchema.safeParseAsync(showcase);
+  // Validate the data
+  const validatedData = await showcaseSchema.safeParseAsync({
+    companyName: showcase.companyName,
+    logoUrl: showcase.logoUrl,
+    brandColor: showcase.brandColor,
+    subdomain: showcase.subdomain,
+    products: showcase.products,
+  });
 
   if (!validatedData.success) return false;
 
-  // Update showcase
+  // Update the showcase
   await db
     .update(ShowcaseSchema)
     .set({
@@ -58,28 +64,15 @@ export async function updateShowcase(showcase: UpdateShowcaseType) {
     })
     .where(eq(ShowcaseSchema.id, showcase.id));
 
-  // Get existing products and prices
+  // Get existing products
   const existingProducts = await db
     .select()
     .from(ProductSchema)
     .where(eq(ProductSchema.showcaseId, showcase.id));
 
-  const existingPrices = await db
-    .select()
-    .from(PriceSchema)
-    .where(
-      inArray(
-        PriceSchema.productId,
-        existingProducts.map((p) => p.id)
-      )
-    );
-
-  // Create maps for easy lookup
+  // Create a map of existing products by ID
   const existingProductsMap = new Map(
     existingProducts.map((product) => [product.id, product])
-  );
-  const existingPricesMap = new Map(
-    existingPrices.map((price) => [price.id, price])
   );
 
   // Process each product in the form
@@ -90,8 +83,21 @@ export async function updateShowcase(showcase: UpdateShowcaseType) {
       const existingProduct = existingProductsMap.get(product.id)!;
 
       // Update the product in Paddle
-      await paddle.products.update(existingProduct.id, {
+      await paddle.products.update(existingProduct.paddleProductId, {
         name: product.name,
+      });
+
+      // Update the price in Paddle
+      await paddle.prices.update(existingProduct.paddlePriceId, {
+        description: product.name,
+        unitPrice: {
+          amount: product.basePriceInCents.toString(),
+          currencyCode: "USD",
+        },
+        billingCycle: {
+          frequency: product.recurringFrequency,
+          interval: product.recurringInterval as Interval,
+        },
       });
 
       // Update the product in the database
@@ -99,71 +105,14 @@ export async function updateShowcase(showcase: UpdateShowcaseType) {
         .update(ProductSchema)
         .set({
           name: product.name,
+          priceName: product.priceName,
+          basePriceInCents: product.basePriceInCents,
+          priceQuantity: product.priceQuantity,
+          recurringInterval: product.recurringInterval,
+          recurringFrequency: product.recurringFrequency,
           updatedAt: new Date(),
         })
         .where(eq(ProductSchema.id, product.id));
-
-      // Process each price for this product
-      for (const price of product.prices) {
-        if (existingPricesMap.has(price.id)) {
-          // Update existing price
-          const existingPrice = existingPricesMap.get(price.id)!;
-
-          // Update the price in Paddle
-          await paddle.prices.update(existingPrice.paddlePriceId, {
-            description: `${product.name} - ${price.name}`,
-            unitPrice: {
-              amount: price.basePriceInCents.toString(),
-              currencyCode: "USD",
-            },
-            billingCycle: {
-              frequency: price.recurringFrequency,
-              interval: price.recurringInterval as Interval,
-            },
-          });
-
-          // Update the price in the database
-          await db
-            .update(PriceSchema)
-            .set({
-              name: price.name,
-              basePriceInCents: price.basePriceInCents,
-              priceQuantity: price.priceQuantity,
-              recurringInterval: price.recurringInterval,
-              recurringFrequency: price.recurringFrequency,
-              updatedAt: new Date(),
-            })
-            .where(eq(PriceSchema.id, price.id));
-
-          // Remove from the map to track which ones to delete
-          existingPricesMap.delete(price.id);
-        } else {
-          // Create new price
-          const paddlePrice = await paddle.prices.create({
-            productId: existingProduct.id,
-            description: `${product.name} - ${price.name}`,
-            unitPrice: {
-              amount: price.basePriceInCents.toString(),
-              currencyCode: "USD",
-            },
-            billingCycle: {
-              frequency: price.recurringFrequency,
-              interval: price.recurringInterval as Interval,
-            },
-          });
-
-          await db.insert(PriceSchema).values({
-            id: nanoid(),
-            productId: product.id,
-            name: price.name,
-            basePriceInCents: price.basePriceInCents,
-            priceQuantity: price.priceQuantity,
-            recurringInterval: price.recurringInterval,
-            recurringFrequency: price.recurringFrequency,
-            paddlePriceId: paddlePrice.id,
-          });
-        }
-      }
 
       // Remove from the map to track which ones to delete
       existingProductsMap.delete(product.id);
@@ -174,61 +123,46 @@ export async function updateShowcase(showcase: UpdateShowcaseType) {
         taxCategory: "standard",
       });
 
-      const productId = nanoid();
-      await db.insert(ProductSchema).values({
-        id: productId,
-        showcaseId: showcase.id,
-        name: product.name,
+      const price = await paddle.prices.create({
+        productId: newProduct.id,
+        description: product.name,
+        unitPrice: {
+          amount: product.basePriceInCents.toString(),
+          currencyCode: "USD",
+        },
+        billingCycle: {
+          frequency: product.recurringFrequency,
+          interval: product.recurringInterval as Interval,
+        },
       });
 
-      // Create prices for the new product
-      for (const price of product.prices) {
-        const paddlePrice = await paddle.prices.create({
-          productId: newProduct.id,
-          description: `${product.name} - ${price.name}`,
-          unitPrice: {
-            amount: price.basePriceInCents.toString(),
-            currencyCode: "USD",
-          },
-          billingCycle: {
-            frequency: price.recurringFrequency,
-            interval: price.recurringInterval as Interval,
-          },
-        });
-
-        await db.insert(PriceSchema).values({
-          id: nanoid(),
-          productId: productId,
-          name: price.name,
-          basePriceInCents: price.basePriceInCents,
-          priceQuantity: price.priceQuantity,
-          recurringInterval: price.recurringInterval,
-          recurringFrequency: price.recurringFrequency,
-          paddlePriceId: paddlePrice.id,
-        });
-      }
+      await db.insert(ProductSchema).values({
+        id: nanoid(),
+        showcaseId: showcase.id,
+        name: product.name,
+        priceName: product.priceName,
+        basePriceInCents: product.basePriceInCents,
+        priceQuantity: product.priceQuantity,
+        recurringInterval: product.recurringInterval,
+        recurringFrequency: product.recurringFrequency,
+        paddleProductId: newProduct.id,
+        paddlePriceId: price.id,
+      });
     }
-  }
-
-  // Delete any prices that were removed from the form
-  for (const [id, price] of existingPricesMap.entries()) {
-    try {
-      await paddle.prices.archive(price.paddlePriceId);
-    } catch (error) {
-      console.error("Failed to delete price from Paddle:", error);
-    }
-
-    await db.delete(PriceSchema).where(eq(PriceSchema.id, id));
   }
 
   // Delete any products that were removed from the form
   for (const [id, product] of existingProductsMap.entries()) {
+    // Delete from Paddle - using the correct method
     try {
-      await paddle.products.archive(product.id);
+      // Note: Paddle API might not have a direct delete method for products
+      // If this doesn't work, you might need to archive or deactivate the product instead
+      await paddle.products.archive(product.paddleProductId);
     } catch (error) {
       console.error("Failed to delete product from Paddle:", error);
     }
 
+    // Delete from database (this will cascade due to the foreign key constraint)
     await db.delete(ProductSchema).where(eq(ProductSchema.id, id));
   }
 
