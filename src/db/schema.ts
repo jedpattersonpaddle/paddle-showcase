@@ -100,6 +100,7 @@ export const product = pgTable(
     id: text().primaryKey().notNull(),
     showcaseId: text("showcase_id").notNull(),
     name: text().notNull(),
+    paddleProductId: text("paddle_product_id").notNull(),
     createdAt: timestamp("created_at", { mode: "string" })
       .defaultNow()
       .notNull(),

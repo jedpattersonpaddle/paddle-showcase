@@ -15,6 +15,13 @@
       "when": 1744988842758,
       "tag": "0001_sharp_forge",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1745327576020,
+      "tag": "0002_brave_the_santerians",
+      "breakpoints": true
     }
   ]
 }

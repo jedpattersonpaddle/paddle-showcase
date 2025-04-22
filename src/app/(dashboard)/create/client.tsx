@@ -220,32 +220,16 @@ export function CreateShowcaseClient() {
         products: products.map((product) => ({
           id: product.id,
           name: product.name,
-          priceName: product.prices[0].name,
-          basePriceInCents: product.prices[0].basePriceInCents,
-          priceQuantity: product.prices[0].priceQuantity,
-          recurringInterval: product.prices[0].recurringInterval,
-          recurringFrequency: product.prices[0].recurringFrequency,
-        })) as [
-          {
-            id: string;
-            name: string;
-            priceName: string;
-            basePriceInCents: number;
-            priceQuantity: number;
-            recurringInterval: "month" | "day" | "week" | "year" | "one-time";
-            recurringFrequency: number;
-          },
-          ...{
-            id: string;
-            name: string;
-            priceName: string;
-            basePriceInCents: number;
-            priceQuantity: number;
-            recurringInterval: "month" | "day" | "week" | "year" | "one-time";
-            recurringFrequency: number;
-          }[]
-        ],
-      };
+          prices: product.prices.map((price) => ({
+            id: price.id,
+            name: price.name,
+            basePriceInCents: price.basePriceInCents,
+            priceQuantity: price.priceQuantity,
+            recurringInterval: price.recurringInterval,
+            recurringFrequency: price.recurringFrequency,
+          })),
+        })),
+      } as const;
 
       const result = await createShowcase(showcaseData);
 
@@ -253,10 +237,9 @@ export function CreateShowcaseClient() {
         throw new Error("Failed to create showcase");
       }
 
-      toast.success("Showcase created successfully!");
-      router.push("/");
-      router.refresh();
+      router.push(`/`);
     } catch (error) {
+      console.error(error);
       toast.error(
         error instanceof Error ? error.message : "Failed to create showcase"
       );

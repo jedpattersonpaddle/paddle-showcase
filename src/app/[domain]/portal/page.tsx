@@ -1,6 +1,6 @@
 import { paddle } from "@/lib/paddle";
 import { db } from "@/db";
-import { showcase, product } from "@/db/schema";
+import { showcase, product, price } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,11 @@ import type { Subscription } from "@paddle/paddle-node-sdk";
 import { format } from "date-fns";
 
 type Product = typeof product.$inferSelect;
+type Price = typeof price.$inferSelect;
 
 interface SubscriptionWithProduct extends Subscription {
   product: Product;
+  price: Price;
 }
 
 export default async function PortalPage({
@@ -49,24 +51,36 @@ export default async function PortalPage({
 
   const subscriptions = await Promise.all(
     products.map(async (product) => {
-      try {
-        const subsCollection = await paddle.subscriptions.list({
-          priceId: [product.paddlePriceId],
-        });
+      const prices = await db
+        .select()
+        .from(price)
+        .where(eq(price.productId, product.id));
 
-        const subs = await subsCollection.next();
+      const productSubscriptions = await Promise.all(
+        prices.map(async (price) => {
+          try {
+            const subsCollection = await paddle.subscriptions.list({
+              priceId: [price.paddlePriceId],
+            });
 
-        return subs.map((sub) => ({
-          ...sub,
-          product,
-        }));
-      } catch (error) {
-        console.error(
-          `Error fetching subscriptions for product ${product.id}:`,
-          error
-        );
-        return [];
-      }
+            const subs = await subsCollection.next();
+
+            return subs.map((sub) => ({
+              ...sub,
+              product,
+              price,
+            }));
+          } catch (error) {
+            console.error(
+              `Error fetching subscriptions for price ${price.id}:`,
+              error
+            );
+            return [];
+          }
+        })
+      );
+
+      return productSubscriptions.flat();
     })
   );
 

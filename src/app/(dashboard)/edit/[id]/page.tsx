@@ -8,7 +8,7 @@ import {
   product as ProductSchema,
   price as PriceSchema,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 export default async function EditShowcase({
   params,
@@ -40,10 +40,19 @@ export default async function EditShowcase({
     .from(ProductSchema)
     .where(eq(ProductSchema.showcaseId, (await params).id));
 
-  const prices = await db
-    .select()
-    .from(PriceSchema)
-    .where(eq(PriceSchema.productId, products[0]?.id));
+  // Get prices for all products
+  const prices =
+    products.length > 0
+      ? await db
+          .select()
+          .from(PriceSchema)
+          .where(
+            inArray(
+              PriceSchema.productId,
+              products.map((p) => p.id)
+            )
+          )
+      : [];
 
   return (
     <EditShowcaseClient

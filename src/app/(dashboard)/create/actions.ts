@@ -70,33 +70,37 @@ export async function createShowcase(showcase: ShowcaseType) {
       id: productId,
       showcaseId: showcaseId,
       name: product.name,
+      paddleProductId: newProduct.id,
     });
 
-    // Create price in Paddle
-    const price = await paddle.prices.create({
-      productId: newProduct.id,
-      description: product.name,
-      unitPrice: {
-        amount: product.basePriceInCents.toString(),
-        currencyCode: "USD",
-      },
-      billingCycle: {
-        frequency: product.recurringFrequency,
-        interval: product.recurringInterval as Interval,
-      },
-    });
+    // Create prices in Paddle and insert into our database
+    for (const price of product.prices) {
+      // Create price in Paddle
+      const paddlePrice = await paddle.prices.create({
+        productId: newProduct.id,
+        description: product.name,
+        unitPrice: {
+          amount: price.basePriceInCents.toString(),
+          currencyCode: "USD",
+        },
+        billingCycle: {
+          frequency: price.recurringFrequency,
+          interval: price.recurringInterval as Interval,
+        },
+      });
 
-    // Insert price into our database
-    await db.insert(PriceSchema).values({
-      id: nanoid(),
-      productId: productId,
-      name: product.priceName,
-      basePriceInCents: product.basePriceInCents,
-      priceQuantity: product.priceQuantity,
-      recurringInterval: product.recurringInterval,
-      recurringFrequency: product.recurringFrequency,
-      paddlePriceId: price.id,
-    });
+      // Insert price into our database
+      await db.insert(PriceSchema).values({
+        id: nanoid(),
+        productId: productId,
+        name: price.name,
+        basePriceInCents: price.basePriceInCents,
+        priceQuantity: price.priceQuantity,
+        recurringInterval: price.recurringInterval,
+        recurringFrequency: price.recurringFrequency,
+        paddlePriceId: paddlePrice.id,
+      });
+    }
   }
 
   return showcaseId;

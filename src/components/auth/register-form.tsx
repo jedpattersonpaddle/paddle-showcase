@@ -15,11 +15,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function RegisterForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +38,6 @@ export function RegisterForm({
       email,
       password,
       name,
-      callbackURL: "/create",
     });
 
     if (error) {
@@ -45,6 +46,7 @@ export function RegisterForm({
     } else {
       toast("Successfully created account");
       setIsLoading(false);
+      router.push("/");
     }
   };
 

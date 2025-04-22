@@ -89,24 +89,10 @@ export async function updateShowcase(showcase: UpdateShowcaseType) {
     if (existingProductsMap.has(product.id)) {
       // Update existing product
       const existingProduct = existingProductsMap.get(product.id)!;
-      const existingPrice = existingPricesMap.get(product.id);
 
       // Update the product in Paddle
-      await paddle.products.update(existingPrice?.paddlePriceId || "", {
+      await paddle.products.update(existingProduct.paddleProductId, {
         name: product.name,
-      });
-
-      // Update the price in Paddle
-      await paddle.prices.update(existingPrice?.paddlePriceId || "", {
-        description: product.name,
-        unitPrice: {
-          amount: product.basePriceInCents.toString(),
-          currencyCode: "USD",
-        },
-        billingCycle: {
-          frequency: product.recurringFrequency,
-          interval: product.recurringInterval as Interval,
-        },
       });
 
       // Update the product in the database
@@ -118,24 +104,69 @@ export async function updateShowcase(showcase: UpdateShowcaseType) {
         })
         .where(eq(ProductSchema.id, product.id));
 
-      // Update the price in the database
-      if (existingPrice) {
-        await db
-          .update(PriceSchema)
-          .set({
-            name: product.priceName,
-            basePriceInCents: product.basePriceInCents,
-            priceQuantity: product.priceQuantity,
-            recurringInterval: product.recurringInterval,
-            recurringFrequency: product.recurringFrequency,
-            updatedAt: new Date().toISOString(),
-          })
-          .where(eq(PriceSchema.id, existingPrice.id));
+      // Process each price for the product
+      for (const price of product.prices) {
+        if (existingPricesMap.has(price.id)) {
+          const existingPrice = existingPricesMap.get(price.id)!;
+
+          // Update the price in Paddle
+          await paddle.prices.update(existingPrice.paddlePriceId, {
+            description: product.name,
+            unitPrice: {
+              amount: price.basePriceInCents.toString(),
+              currencyCode: "USD",
+            },
+            billingCycle: {
+              frequency: price.recurringFrequency,
+              interval: price.recurringInterval as Interval,
+            },
+          });
+
+          // Update the price in the database
+          await db
+            .update(PriceSchema)
+            .set({
+              name: price.name,
+              basePriceInCents: price.basePriceInCents,
+              priceQuantity: price.priceQuantity,
+              recurringInterval: price.recurringInterval,
+              recurringFrequency: price.recurringFrequency,
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(PriceSchema.id, price.id));
+
+          // Remove from the map to track which ones to delete
+          existingPricesMap.delete(price.id);
+        } else {
+          // Create new price
+          const newPrice = await paddle.prices.create({
+            productId: existingProduct.paddleProductId,
+            description: product.name,
+            unitPrice: {
+              amount: price.basePriceInCents.toString(),
+              currencyCode: "USD",
+            },
+            billingCycle: {
+              frequency: price.recurringFrequency,
+              interval: price.recurringInterval as Interval,
+            },
+          });
+
+          await db.insert(PriceSchema).values({
+            id: nanoid(),
+            productId: product.id,
+            name: price.name,
+            basePriceInCents: price.basePriceInCents,
+            priceQuantity: price.priceQuantity,
+            recurringInterval: price.recurringInterval,
+            recurringFrequency: price.recurringFrequency,
+            paddlePriceId: newPrice.id,
+          });
+        }
       }
 
-      // Remove from the maps to track which ones to delete
+      // Remove from the map to track which ones to delete
       existingProductsMap.delete(product.id);
-      existingPricesMap.delete(product.id);
     } else {
       // Create new product
       const newProduct = await paddle.products.create({
@@ -143,36 +174,40 @@ export async function updateShowcase(showcase: UpdateShowcaseType) {
         taxCategory: "standard",
       });
 
-      const price = await paddle.prices.create({
-        productId: newProduct.id,
-        description: product.name,
-        unitPrice: {
-          amount: product.basePriceInCents.toString(),
-          currencyCode: "USD",
-        },
-        billingCycle: {
-          frequency: product.recurringFrequency,
-          interval: product.recurringInterval as Interval,
-        },
-      });
-
       const productId = nanoid();
       await db.insert(ProductSchema).values({
         id: productId,
         showcaseId: showcase.id,
         name: product.name,
+        paddleProductId: newProduct.id,
       });
 
-      await db.insert(PriceSchema).values({
-        id: nanoid(),
-        productId: productId,
-        name: product.priceName,
-        basePriceInCents: product.basePriceInCents,
-        priceQuantity: product.priceQuantity,
-        recurringInterval: product.recurringInterval,
-        recurringFrequency: product.recurringFrequency,
-        paddlePriceId: price.id,
-      });
+      // Create prices for the new product
+      for (const price of product.prices) {
+        const newPrice = await paddle.prices.create({
+          productId: newProduct.id,
+          description: product.name,
+          unitPrice: {
+            amount: price.basePriceInCents.toString(),
+            currencyCode: "USD",
+          },
+          billingCycle: {
+            frequency: price.recurringFrequency,
+            interval: price.recurringInterval as Interval,
+          },
+        });
+
+        await db.insert(PriceSchema).values({
+          id: nanoid(),
+          productId: productId,
+          name: price.name,
+          basePriceInCents: price.basePriceInCents,
+          priceQuantity: price.priceQuantity,
+          recurringInterval: price.recurringInterval,
+          recurringFrequency: price.recurringFrequency,
+          paddlePriceId: newPrice.id,
+        });
+      }
     }
   }
 
