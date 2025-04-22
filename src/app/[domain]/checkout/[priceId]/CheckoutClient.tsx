@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { showcase, price } from "@/db/schema";
-import Script from "next/script";
 import { initializePaddle, Paddle, Environments } from "@paddle/paddle-js";
 import type { CheckoutEventsData } from "@paddle/paddle-js/types/checkout/events";
 import throttle from "lodash.throttle";
@@ -50,8 +49,8 @@ export default function CheckoutClient({
     currentPrice.recurringInterval === "year"
   );
 
-  // Get locale from URL or default to English
   const urlLocale = searchParams.get("locale") as Locale | null;
+  const discountCode = searchParams.get("code") as string | null;
   const [checkoutLocale, setCheckoutLocale] = useState<Locale>(
     urlLocale && Object.keys(checkoutTranslations).includes(urlLocale)
       ? urlLocale
@@ -60,11 +59,9 @@ export default function CheckoutClient({
 
   const [settingsVersion, setSettingsVersion] = useState<number>(0);
 
-  // Update URL when locale changes
   const updateLocale = (newLocale: Locale) => {
     setCheckoutLocale(newLocale);
 
-    // Update URL with new locale
     const params = new URLSearchParams(searchParams.toString());
     params.set("locale", newLocale);
     router.push(`?${params.toString()}`, { scroll: false });
@@ -86,13 +83,10 @@ export default function CheckoutClient({
     [priceId]
   );
 
-  // Function to reinitialize Paddle with new settings
   const reinitializePaddle = useCallback(() => {
     if (paddle) {
-      // Close the current checkout
       paddle.Checkout.close();
 
-      // Reinitialize with new settings
       initializePaddle({
         token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
         environment: process.env.NEXT_PUBLIC_PADDLE_ENV as Environments,
@@ -126,6 +120,7 @@ export default function CheckoutClient({
                 quantity,
               },
             ],
+            discountCode,
           });
         }
       });
@@ -139,7 +134,6 @@ export default function CheckoutClient({
     checkoutLocale,
   ]);
 
-  // Effect to handle settings changes
   useEffect(() => {
     if (paddle && paddle.Initialized) {
       reinitializePaddle();
@@ -245,14 +239,11 @@ export default function CheckoutClient({
     { code: "zh", name: "Chinese" },
   ];
 
-  // Get current translations
   const t = checkoutTranslations[checkoutLocale];
 
   const handleSwitchToAnnual = () => {
     if (alternativePrice) {
-      // Get the current domain from the URL
       const domain = window.location.pathname.split("/")[1];
-      // Navigate to the new price route
       router.push(
         `/checkout/${alternativePrice.paddlePriceId}${window.location.search}`
       );
