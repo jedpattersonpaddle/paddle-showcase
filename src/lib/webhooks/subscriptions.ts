@@ -5,6 +5,7 @@ import type {
 } from "@paddle/paddle-node-sdk";
 import { generateLicenseKey } from "../utils";
 import { subscription as SubscriptionSchema } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { generateId } from "@/lib/utils";
 
 export async function createSubscription(
@@ -22,5 +23,8 @@ export async function createSubscription(
 export async function cancelSubscription(
   subscription: SubscriptionCanceledEvent
 ) {
-  await db.update(SubscriptionSchema).set({ status: subscription.data.status });
+  await db
+    .update(SubscriptionSchema)
+    .set({ status: subscription.data.status })
+    .where(eq(SubscriptionSchema.paddleSubscriptionId, subscription.data.id));
 }
