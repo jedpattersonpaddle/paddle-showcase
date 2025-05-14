@@ -102,7 +102,12 @@ export default function CheckoutClient({
             frameStyle:
               "width: 100%; background-color: transparent; border: none",
             successUrl: "/checkout/success",
-            allowedPaymentMethods: ["card"],
+            allowedPaymentMethods: [
+              "card",
+              "apple_pay",
+              "google_pay",
+              "paypal",
+            ],
             showAddDiscounts: showDiscountInput,
             showAddTaxId: showTaxIdInput,
             locale: checkoutLocale,
@@ -161,7 +166,12 @@ export default function CheckoutClient({
             frameStyle:
               "width: 100%; background-color: transparent; border: none",
             successUrl: "/checkout/success",
-            allowedPaymentMethods: ["card"],
+            allowedPaymentMethods: [
+              "card",
+              "apple_pay",
+              "google_pay",
+              "paypal",
+            ],
             showAddDiscounts: showDiscountInput,
             showAddTaxId: showTaxIdInput,
             locale: checkoutLocale,
